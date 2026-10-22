@@ -4,6 +4,8 @@ services:
     name: myreset
     runtime: docker
     plan: free
+    # Neon のデータベースと同じ地域にすると速い（日本から近いのはシンガポール）
+    region: singapore
     healthCheckPath: /login
     envVars:
       - key: SPRING_PROFILES_ACTIVE
