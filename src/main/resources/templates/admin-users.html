@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('ユーザー管理')}"></head>
+<body>
+<header th:replace="~{fragments :: header('admin')}"></header>
+
+<main>
+    <p th:replace="~{fragments :: flash}"></p>
+
+    <div class="page-head">
+        <h1>ユーザー管理</h1>
+        <p th:text="|登録ユーザー ${rows.size()}人|"></p>
+    </div>
+
+    <section class="panel">
+        <ul class="item-list">
+            <li th:each="row : ${rows}">
+                <span class="avatar" th:style="|--avatar: ${row.user.themeColor}|"
+                      th:text="${#strings.toUpperCase(#strings.substring(row.user.username, 0, 1))}">U</span>
+                <div class="item-main">
+                    <p class="item-title">
+                        <span th:text="${row.user.username}"></span>
+                        <span class="badge" th:if="${row.user.admin}">管理者</span>
+                        <span class="badge subtle" th:if="${row.user.id == currentUser.id}">あなた</span>
+                    </p>
+                    <p class="item-sub"
+                       th:text="|${#temporals.format(row.user.createdAt, 'yyyy/M/d')} 登録 ・ 習慣 ${row.habitCount}件|"></p>
+                </div>
+                <form th:unless="${row.user.id == currentUser.id}"
+                      th:action="@{/admin/users/{id}/delete(id=${row.user.id})}" method="post"
+                      th:data-name="${row.user.username}"
+                      onsubmit="return confirm(this.dataset.name + ' さんと、その習慣・記録をすべて削除します。よろしいですか？');">
+                    <button type="submit" class="icon-button danger" aria-label="削除">
+                        <svg th:replace="~{icons :: icon('trash')}"></svg>
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </section>
+</main>
+</body>
+</html>

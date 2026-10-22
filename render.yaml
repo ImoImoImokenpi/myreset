@@ -1,0 +1,24 @@
+# Render の Blueprint。Render のダッシュボードで「New > Blueprint」からこのリポジトリを選ぶと作成される
+services:
+  - type: web
+    name: myreset
+    runtime: docker
+    plan: free
+    healthCheckPath: /login
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # 「ログインしたままにする」の署名鍵。Render が自動で生成する
+      - key: REMEMBER_ME_KEY
+        generateValue: true
+      # 以下は作成時に Render の画面で入力する
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USERNAME
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: REGISTRATION_OPEN
+        value: "true"

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('今日')}"></head>
+<body>
+<header th:replace="~{fragments :: header('home')}"></header>
+
+<main>
+    <p th:replace="~{fragments :: flash}"></p>
+
+    <section class="hero">
+        <div class="hero-top">
+            <div>
+                <p class="hero-date" th:text="${#temporals.format(today, 'M月d日 EEEE')}">今日</p>
+                <p class="hero-greet" th:text="|${currentUser.username} さんのレベル|"></p>
+            </div>
+            <div class="hero-level">
+                <span>Lv</span><strong th:text="${level.level}">1</strong>
+            </div>
+        </div>
+        <div class="hero-progress">
+            <div class="progress"><div class="progress-fill" th:style="|width: ${level.progressPercent()}%|"></div></div>
+            <p>
+                <span th:text="|${level.xpIntoLevel} / ${level.xpForNextLevel} XP|"></span>
+                <span th:text="|次のレベルまで ${level.xpForNextLevel - level.xpIntoLevel} XP|"></span>
+            </p>
+        </div>
+        <dl class="hero-stats">
+            <div><dt>今日の達成</dt><dd><span th:text="${doneCount}">0</span><small th:text="|/ ${rows.size()}|"></small></dd></div>
+            <div><dt>最長連続</dt><dd><span th:text="${bestStreak}">0</span><small>日</small></dd></div>
+            <div><dt>累計</dt><dd><span th:text="${totalXp}">0</span><small>XP</small></dd></div>
+        </dl>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2>今日の習慣</h2>
+            <a class="link-button" th:href="@{/habits}">
+                <svg th:replace="~{icons :: icon('plus')}"></svg>追加
+            </a>
+        </div>
+
+        <div class="empty-state" th:if="${rows.isEmpty()}">
+            <p>まだ習慣がありません</p>
+            <a class="button" th:href="@{/habits}">最初の習慣を追加する</a>
+        </div>
+
+        <ul class="habit-list">
+            <li th:each="row : ${rows}" th:classappend="${row.doneToday} ? 'done'">
+                <form th:action="@{/habits/{id}/toggle(id=${row.habit.id})}" method="post">
+                    <button type="submit" class="check" th:aria-label="${row.doneToday} ? 'チェックを外す' : '達成にする'">
+                        <svg th:replace="~{icons :: icon('check')}"></svg>
+                    </button>
+                </form>
+                <div class="habit-main">
+                    <p class="habit-name" th:text="${row.habit.name}"></p>
+                    <p class="habit-meta">
+                        <span class="meta-item">
+                            <svg th:replace="~{icons :: icon(${row.habit.category.icon})}"></svg>
+                            <span th:text="${row.habit.category.label}"></span>
+                        </span>
+                        <span class="meta-item" th:text="|+${row.habit.xp} XP|"></span>
+                        <span class="meta-item streak" th:if="${row.streak > 0}">
+                            <svg th:replace="~{icons :: icon('flame')}"></svg>
+                            <span th:text="|${row.streak}日|"></span>
+                        </span>
+                    </p>
+                </div>
+                <div class="week-dots" aria-label="直近7日">
+                    <span th:each="d : ${row.lastWeek}" th:classappend="${d} ? 'on'"></span>
+                </div>
+            </li>
+        </ul>
+    </section>
+
+    <div class="grid-2">
+        <section class="panel">
+            <div class="panel-head"><h2>直近7日</h2></div>
+            <div class="chart">
+                <div class="chart-col" th:each="d, st : ${week}" th:classappend="${st.last} ? 'today'">
+                    <div class="chart-track">
+                        <div class="chart-bar"
+                             th:style="|height: ${d.total == 0 ? 0 : d.done * 100 / d.total}%|"></div>
+                    </div>
+                    <span class="chart-value" th:text="${d.done}"></span>
+                    <span class="chart-label" th:text="${#temporals.format(d.date, 'E')}"></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head"><h2>今日の振り返り</h2></div>
+            <form th:action="@{/reflection}" method="post" class="reflection">
+                <textarea name="text" rows="5" maxlength="2000"
+                          placeholder="できたこと、気づいたこと、明日やりたいこと"
+                          th:text="${reflection}"></textarea>
+                <button type="submit" class="button">保存</button>
+            </form>
+        </section>
+    </div>
+</main>
+</body>
+</html>

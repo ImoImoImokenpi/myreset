@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('習慣')}"></head>
+<body>
+<header th:replace="~{fragments :: header('habits')}"></header>
+
+<main>
+    <p th:replace="~{fragments :: flash}"></p>
+
+    <div class="page-head">
+        <h1>習慣</h1>
+        <p>毎日取り組みたいことを登録しましょう。達成すると XP がもらえます。</p>
+    </div>
+
+    <section class="panel">
+        <div class="panel-head"><h2>新しい習慣</h2></div>
+        <form th:action="@{/habits}" th:object="${habitForm}" method="post" class="habit-form">
+            <label class="field field-name">
+                <span>名前</span>
+                <input type="text" th:field="*{name}" placeholder="例：腕立て伏せ30回" maxlength="50" required>
+                <small class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></small>
+            </label>
+            <fieldset class="field">
+                <legend>カテゴリ</legend>
+                <div class="segmented">
+                    <label th:each="c : ${categories}">
+                        <input type="radio" th:field="*{category}" th:value="${c}">
+                        <span><svg th:replace="~{icons :: icon(${c.icon})}"></svg><span th:text="${c.label}"></span></span>
+                    </label>
+                </div>
+            </fieldset>
+            <label class="field field-xp">
+                <span>XP</span>
+                <input type="number" th:field="*{xp}" min="1" max="100" inputmode="numeric">
+                <small class="error" th:if="${#fields.hasErrors('xp')}" th:errors="*{xp}"></small>
+            </label>
+            <button type="submit" class="button">
+                <svg th:replace="~{icons :: icon('plus')}"></svg>追加
+            </button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2>登録中</h2>
+            <span class="count" th:text="${habits.size()}">0</span>
+        </div>
+        <p class="muted" th:if="${habits.isEmpty()}">まだ習慣がありません。</p>
+        <ul class="item-list">
+            <li th:each="h : ${habits}">
+                <span class="item-icon"><svg th:replace="~{icons :: icon(${h.category.icon})}"></svg></span>
+                <div class="item-main">
+                    <p class="item-title" th:text="${h.name}"></p>
+                    <p class="item-sub" th:text="|${h.category.label} ・ ${h.xp} XP|"></p>
+                </div>
+                <form th:action="@{/habits/{id}/archive(id=${h.id})}" method="post"
+                      onsubmit="return confirm('この習慣を一覧から外しますか？（獲得XPは残ります）');">
+                    <button type="submit" class="icon-button danger" aria-label="外す">
+                        <svg th:replace="~{icons :: icon('trash')}"></svg>
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </section>
+</main>
+</body>
+</html>

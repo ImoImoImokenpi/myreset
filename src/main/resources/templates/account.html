@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('設定')}"></head>
+<body>
+<header th:replace="~{fragments :: header('account')}"></header>
+
+<main class="narrow">
+    <p th:replace="~{fragments :: flash}"></p>
+
+    <section class="profile">
+        <span class="avatar avatar-lg" th:text="${#strings.toUpperCase(#strings.substring(currentUser.username, 0, 1))}">U</span>
+        <div>
+            <p class="profile-name" th:text="${currentUser.username}"></p>
+            <p class="profile-sub"
+               th:text="|${currentUser.admin ? '管理者' : '一般ユーザー'} ・ ${#temporals.format(currentUser.createdAt, 'yyyy年M月d日')}から|"></p>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2><svg th:replace="~{icons :: icon('palette')}"></svg>メインカラー</h2>
+        </div>
+        <form th:action="@{/account/theme}" method="post" class="theme-form" id="theme-form">
+            <div class="swatches">
+                <label th:each="c : ${themePresets}" class="swatch" th:title="${c.name}">
+                    <input type="radio" name="color" th:value="${c.hex}"
+                           th:checked="${c.hex == currentUser.themeColor}">
+                    <span th:style="|--swatch: ${c.hex}|"></span>
+                </label>
+                <label class="swatch swatch-custom" title="カスタム">
+                    <input type="radio" name="color" id="custom-radio" th:value="${currentUser.themeColor}"
+                           th:checked="${!#lists.contains(themePresets.![hex], currentUser.themeColor)}">
+                    <span>
+                        <input type="color" id="custom-color" th:value="${currentUser.themeColor}" aria-label="好きな色を選ぶ">
+                    </span>
+                </label>
+            </div>
+            <p class="muted small">右端の虹色のボタンから、好きな色も選べます。</p>
+            <button type="submit" class="button">この色にする</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2><svg th:replace="~{icons :: icon('lock')}"></svg>パスワード変更</h2>
+        </div>
+        <form th:action="@{/account/password}" th:object="${passwordForm}" method="post" class="stack">
+            <label class="field">
+                <span>現在のパスワード</span>
+                <input type="password" th:field="*{currentPassword}" autocomplete="current-password" required>
+                <small class="error" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></small>
+            </label>
+            <label class="field">
+                <span>新しいパスワード（8文字以上）</span>
+                <input type="password" th:field="*{newPassword}" autocomplete="new-password" required>
+                <small class="error" th:if="${#fields.hasErrors('newPassword')}" th:errors="*{newPassword}"></small>
+            </label>
+            <label class="field">
+                <span>新しいパスワード（確認）</span>
+                <input type="password" th:field="*{newPasswordConfirm}" autocomplete="new-password" required>
+                <small class="error" th:if="${#fields.hasErrors('newPasswordConfirmed')}"
+                       th:errors="*{newPasswordConfirmed}"></small>
+            </label>
+            <button type="submit" class="button">変更する</button>
+        </form>
+    </section>
+
+    <form th:action="@{/logout}" method="post">
+        <button type="submit" class="button ghost full">
+            <svg th:replace="~{icons :: icon('logout')}"></svg>ログアウト
+        </button>
+    </form>
+</main>
+
+<script>
+    // 色を選んだらその場でプレビューする（保存はボタンで行う）
+    (() => {
+        const form = document.getElementById('theme-form');
+        const custom = document.getElementById('custom-color');
+        const customRadio = document.getElementById('custom-radio');
+        const preview = color => document.documentElement.style.setProperty('--brand', color);
+        form.addEventListener('change', e => {
+            if (e.target.name === 'color') preview(e.target.value);
+        });
+        custom.addEventListener('input', () => {
+            customRadio.value = custom.value;
+            customRadio.checked = true;
+            preview(custom.value);
+        });
+        custom.addEventListener('click', () => { customRadio.checked = true; });
+    })();
+</script>
+</body>
+</html>
