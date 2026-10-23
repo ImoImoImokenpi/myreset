@@ -33,6 +33,9 @@
         <a th:href="@{/habits}" th:classappend="${active == 'habits'} ? 'active'">
             <svg th:replace="~{icons :: icon('list')}"></svg><span class="nav-label">習慣</span>
         </a>
+        <a th:href="@{/stats}" th:classappend="${active == 'stats'} ? 'active'">
+            <svg th:replace="~{icons :: icon('chart')}"></svg><span class="nav-label">記録</span>
+        </a>
         <a th:href="@{/friends}" th:classappend="${active == 'friends'} ? 'active'">
             <span class="nav-icon-wrap">
                 <svg th:replace="~{icons :: icon('friends')}"></svg>
@@ -40,11 +43,7 @@
             </span>
             <span class="nav-label">フレンド</span>
         </a>
-        <a th:if="${currentUser.admin}" th:href="@{/admin/users}"
-           th:classappend="${active == 'admin'} ? 'active'">
-            <svg th:replace="~{icons :: icon('users')}"></svg><span class="nav-label">管理</span>
-        </a>
-        <a th:href="@{/account}" th:classappend="${active == 'account'} ? 'active'">
+        <a th:href="@{/account}" th:classappend="${active == 'account' or active == 'admin'} ? 'active'">
             <span class="avatar" th:text="${#strings.toUpperCase(#strings.substring(currentUser.username, 0, 1))}">U</span>
             <span class="nav-label" th:text="${currentUser.username}">アカウント</span>
         </a>

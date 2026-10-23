@@ -51,13 +51,18 @@
             </a>
         </div>
 
-        <div class="empty-state" th:if="${rows.isEmpty()}">
+        <div class="empty-state" th:if="${rows.isEmpty() and restRows.isEmpty()}">
             <p>まだ習慣がありません</p>
             <a class="button" th:href="@{/habits}">最初の習慣を追加する</a>
         </div>
+        <div class="empty-state" th:if="${rows.isEmpty() and !restRows.isEmpty()}">
+            <p>今日はお休みの日です。ゆっくり休みましょう</p>
+        </div>
 
         <ul class="habit-list">
-            <li th:each="row : ${rows}" th:classappend="${row.doneToday} ? 'done'">
+            <li th:each="row : ${rows}" th:classappend="${row.doneToday} ? 'done'"
+                th:data-amount="${row.amountToday}" th:data-target="${row.habit.target}"
+                th:data-unit="${row.habit.unit ?: '回'}">
                 <form th:action="@{/habits/{id}/toggle(id=${row.habit.id})}" method="post" data-instant="check">
                     <button type="submit" class="check" th:aria-label="${row.doneToday} ? 'チェックを外す' : '達成にする'">
                         <svg th:replace="~{icons :: icon('check')}"></svg>
@@ -65,6 +70,11 @@
                 </form>
                 <div class="habit-main">
                     <p class="habit-name" th:text="${row.habit.name}"></p>
+                    <div class="amount" th:if="${row.habit.quantity}">
+                        <div class="amount-bar"><div th:style="|width: ${row.percent()}%|"></div></div>
+                        <span class="amount-text"
+                              th:text="|${row.amountToday} / ${row.habit.target}${row.habit.unit ?: '回'}|">0 / 8杯</span>
+                    </div>
                     <p class="habit-meta">
                         <span class="meta-item">
                             <svg th:replace="~{icons :: icon(${row.habit.category.icon})}"></svg>
@@ -77,11 +87,33 @@
                         </span>
                     </p>
                 </div>
-                <div class="week-dots" aria-label="直近7日">
-                    <span th:each="d : ${row.lastWeek}" th:classappend="${d} ? 'on'"></span>
+                <div class="amount-buttons" th:if="${row.habit.quantity}">
+                    <form th:action="@{/habits/{id}/amount(id=${row.habit.id})}" method="post" data-instant="amount">
+                        <input type="hidden" name="delta" th:value="${-row.habit.step}">
+                        <button type="submit" class="step-button" th:disabled="${row.amountToday == 0}"
+                                th:aria-label="|${row.habit.step}減らす|">−</button>
+                    </form>
+                    <form th:action="@{/habits/{id}/amount(id=${row.habit.id})}" method="post" data-instant="amount">
+                        <input type="hidden" name="delta" th:value="${row.habit.step}">
+                        <button type="submit" class="step-button plus"
+                                th:text="|+${row.habit.step}|" th:aria-label="|${row.habit.step}増やす|">+1</button>
+                    </form>
+                </div>
+                <div class="week-dots" aria-label="直近7日" th:unless="${row.habit.quantity}">
+                    <span th:each="d : ${row.lastWeek}" th:classappend="${d.css}"></span>
                 </div>
             </li>
         </ul>
+
+        <details class="rest" th:unless="${restRows.isEmpty()}">
+            <summary th:text="|今日はお休みの習慣（${restRows.size()}）|">今日はお休みの習慣</summary>
+            <ul>
+                <li th:each="row : ${restRows}">
+                    <span th:text="${row.habit.name}"></span>
+                    <span class="muted small" th:text="${row.habit.scheduleLabel}"></span>
+                </li>
+            </ul>
+        </details>
     </section>
 
     <div class="grid-2">

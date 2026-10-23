@@ -15,6 +15,18 @@
                 button?.classList.toggle('on');
                 break;
             }
+            case 'amount': {
+                // 量の「＋」「−」：数字とバーをその場で更新する
+                const li = form.closest('li');
+                const delta = Number(form.elements.delta.value);
+                const target = Number(li.dataset.target);
+                const amount = Math.max(0, Number(li.dataset.amount) + delta);
+                li.dataset.amount = String(amount);
+                li.querySelector('.amount-text').textContent = `${amount} / ${target}${li.dataset.unit}`;
+                li.querySelector('.amount-bar > div').style.width = `${Math.min(100, amount * 100 / target)}%`;
+                li.classList.toggle('done', amount >= target);
+                break;
+            }
             case 'share':
                 form.querySelector('button')?.classList.add('pending');
                 break;
@@ -137,4 +149,95 @@
 
     showShareButton();
     new MutationObserver(showShareButton).observe(document.body, { childList: true });
+
+    // ---- リマインダー通知 ----
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
+    function keyToBytes(base64url) {
+        const padding = '='.repeat((4 - base64url.length % 4) % 4);
+        const raw = atob((base64url + padding).replace(/-/g, '+').replace(/_/g, '/'));
+        return Uint8Array.from(raw, c => c.charCodeAt(0));
+    }
+
+    async function postForm(url, params) {
+        const csrf = document.querySelector('#push-form input[name="_csrf"]');
+        const body = new URLSearchParams(params);
+        if (csrf) {
+            body.append('_csrf', csrf.value);
+        }
+        const response = await fetch(url, { method: 'POST', body, credentials: 'same-origin' });
+        if (!response.ok) {
+            throw new Error(String(response.status));
+        }
+    }
+
+    async function setupPush() {
+        const box = document.getElementById('push-box');
+        if (!box) {
+            return;
+        }
+        const status = document.getElementById('push-status');
+        const enable = document.getElementById('push-enable');
+        const disable = document.getElementById('push-disable');
+        const iosHint = document.getElementById('push-ios-hint');
+        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent)
+            || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+
+        if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+            status.textContent = 'このブラウザでは通知を受け取れません。';
+            iosHint.hidden = !isIos || standalone;
+            return;
+        }
+        const registration = await navigator.serviceWorker.ready;
+        let subscription = await registration.pushManager.getSubscription();
+
+        const render = () => {
+            if (Notification.permission === 'denied') {
+                status.textContent = '通知がブロックされています。ブラウザやスマホの設定で、このサイトの通知を許可してください。';
+            } else if (subscription) {
+                status.textContent = 'この端末で通知を受け取ります。';
+            } else {
+                status.textContent = 'この端末ではまだ通知を受け取っていません。';
+            }
+            enable.hidden = !!subscription || Notification.permission === 'denied';
+            disable.hidden = !subscription;
+        };
+        render();
+
+        enable.addEventListener('click', async () => {
+            enable.disabled = true;
+            try {
+                if (await Notification.requestPermission() !== 'granted') {
+                    render();
+                    return;
+                }
+                subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: keyToBytes(box.dataset.key)
+                });
+                await postForm('/api/push/subscribe', { endpoint: subscription.endpoint });
+                location.reload();
+            } catch (e) {
+                status.textContent = '通知の登録に失敗しました。もう一度お試しください。';
+            } finally {
+                enable.disabled = false;
+            }
+        });
+
+        disable.addEventListener('click', async () => {
+            if (!subscription) {
+                return;
+            }
+            const endpoint = subscription.endpoint;
+            await subscription.unsubscribe().catch(() => {});
+            await postForm('/api/push/unsubscribe', { endpoint }).catch(() => {});
+            location.reload();
+        });
+    }
+
+    setupPush().catch(() => {});
 })();

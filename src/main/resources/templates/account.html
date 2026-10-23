@@ -40,6 +40,43 @@
         </form>
     </section>
 
+    <section class="panel" id="reminder">
+        <div class="panel-head">
+            <h2><svg th:replace="~{icons :: icon('bell')}"></svg>リマインダー</h2>
+        </div>
+        <p class="muted small">設定した時刻に、今日まだ達成していない習慣があれば通知します。</p>
+
+        <div class="push-box" id="push-box" th:data-key="${vapidKey}">
+            <p class="push-status" id="push-status">この端末の通知の状態を確認しています…</p>
+            <div class="push-actions">
+                <button type="button" class="button" id="push-enable" hidden>この端末で通知を受け取る</button>
+                <button type="button" class="button ghost" id="push-disable" hidden>この端末の通知をやめる</button>
+            </div>
+            <p class="muted small" id="push-ios-hint" hidden>
+                iPhone・iPad では、Safari の共有ボタンから「ホーム画面に追加」し、ホーム画面のアイコンから開いて設定してください（iOS 16.4 以降）。
+            </p>
+            <form th:action="@{/api/push/subscribe}" method="post" id="push-form" hidden></form>
+        </div>
+
+        <form th:action="@{/account/reminder}" method="post" class="reminder-form">
+            <label class="field">
+                <span>通知する時刻</span>
+                <input type="time" name="time" step="900"
+                       th:value="${currentUser.reminderTime != null ? #temporals.format(currentUser.reminderTime, 'HH:mm') : ''}">
+            </label>
+            <button type="submit" class="button">保存</button>
+        </form>
+        <form th:action="@{/account/reminder}" method="post" th:if="${currentUser.reminderTime}" class="reminder-off">
+            <input type="hidden" name="time" value="">
+            <button type="submit" class="link-button muted-link">リマインダーをオフにする</button>
+        </form>
+
+        <form th:action="@{/account/reminder/test}" method="post" class="reminder-test">
+            <span class="muted small" th:text="|通知を受け取る端末：${deviceCount}台|">通知を受け取る端末：0台</span>
+            <button type="submit" class="link-button" th:disabled="${deviceCount == 0}">テスト通知を送る</button>
+        </form>
+    </section>
+
     <section class="panel">
         <div class="panel-head">
             <h2><svg th:replace="~{icons :: icon('lock')}"></svg>パスワード変更</h2>
@@ -64,6 +101,10 @@
             <button type="submit" class="button">変更する</button>
         </form>
     </section>
+
+    <a class="button ghost full admin-link" th:if="${currentUser.admin}" th:href="@{/admin/users}">
+        <svg th:replace="~{icons :: icon('users')}"></svg>ユーザー管理（管理者）
+    </a>
 
     <form th:action="@{/logout}" method="post">
         <button type="submit" class="button ghost full">

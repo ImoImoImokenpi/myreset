@@ -32,6 +32,7 @@ public class FriendService {
 
     /**
      * フレンド一覧の1人分。達成数・連続日数・習慣は「フレンドに見せる」にした習慣だけで数える。
+     * habits と達成数は、今日が実施日の習慣だけ。
      */
     public record FriendRow(AppUser user, List<HabitRow> habits, int done, int total, int bestStreak,
                             Level level, boolean cheered) {
@@ -161,9 +162,11 @@ public class FriendService {
                     List<HabitRow> shared = habits.rows(friend, today).stream()
                             .filter(r -> r.habit().isShared())
                             .toList();
-                    int done = (int) shared.stream().filter(HabitRow::doneToday).count();
+                    // 達成数は今日が実施日の習慣だけで数える
+                    List<HabitRow> todays = shared.stream().filter(HabitRow::scheduledToday).toList();
+                    int done = (int) todays.stream().filter(HabitRow::doneToday).count();
                     int best = shared.stream().mapToInt(HabitRow::streak).max().orElse(0);
-                    return new FriendRow(friend, shared, done, shared.size(), best,
+                    return new FriendRow(friend, todays, done, todays.size(), best,
                             habits.level(friend), cheered.contains(friend.getId()));
                 })
                 .sorted(Comparator.comparingInt(FriendRow::percent).reversed()

@@ -18,7 +18,9 @@ ENV SPRING_PROFILES_ACTIVE=prod
 # 無料枠（メモリ 512MB・CPU 0.1）向け：
 # - ヒープをコンテナのメモリの 70% までにする
 # - JIT の最適化を軽いものだけにして、弱い CPU を応答に回す
-ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -Xss512k -XX:TieredStopAtLevel=1"
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -Xss512k -XX:TieredStopAtLevel=1 -Duser.timezone=Asia/Tokyo"
+# 「今日」を日本時間で判定する（Render のサーバーは UTC で動いているため）
+ENV TZ=Asia/Tokyo
 
 # 起動を速くする AOT キャッシュを作る（Java 25）。
 # 一度アプリを起動してすぐ終了させ、そのとき読み込んだクラスを app.aot に保存する。

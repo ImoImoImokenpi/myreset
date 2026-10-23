@@ -18,7 +18,15 @@ public interface HabitLogRepository extends JpaRepository<HabitLog, Long> {
 
     List<HabitLog> findByHabitOrderByDateDesc(Habit habit);
 
-    @Query("select coalesce(sum(l.xp), 0) from HabitLog l where l.habit.owner = :owner")
+    /** 達成した記録だけ（習慣も一緒に読み込む）。連続日数・統計・カレンダーに使う。 */
+    @Query("select l from HabitLog l join fetch l.habit h where h.owner = :owner and l.completed = true")
+    List<HabitLog> findCompletedByOwner(AppUser owner);
+
+    /** その日の記録（目標に届いていないものも含む）。 */
+    @Query("select l from HabitLog l join fetch l.habit h where h.owner = :owner and l.date = :date")
+    List<HabitLog> findByOwnerAndDate(AppUser owner, LocalDate date);
+
+    @Query("select coalesce(sum(l.xp), 0) from HabitLog l where l.habit.owner = :owner and l.completed = true")
     long sumXp(AppUser owner);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)

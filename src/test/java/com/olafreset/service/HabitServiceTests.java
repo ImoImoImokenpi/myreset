@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.olafreset.domain.AppUser;
 import com.olafreset.domain.Category;
 import com.olafreset.domain.Habit;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -43,13 +44,56 @@ class HabitServiceTests {
     }
 
     @Test
-    void streakCountsBackFromTodayOrYesterday() {
-        LocalDate today = LocalDate.of(2026, 10, 22);
-        assertThat(HabitService.streak(Set.of(), today)).isZero();
-        assertThat(HabitService.streak(Set.of(today, today.minusDays(1), today.minusDays(3)), today)).isEqualTo(2);
-        // 今日まだ未達成でも、昨日までの連続は途切れていない
-        assertThat(HabitService.streak(Set.of(today.minusDays(1), today.minusDays(2)), today)).isEqualTo(2);
-        assertThat(HabitService.streak(Set.of(today.minusDays(2)), today)).isZero();
+    void quantityHabitCompletesWhenTargetIsReached() {
+        Habit water = service.create(alice, "水を飲む", Category.LIFE, 10, Set.of(DayOfWeek.values()), 8, 2, "杯");
+        LocalDate today = LocalDate.now();
+
+        assertThat(service.addAmount(alice, water.getId(), today, 2)).isEqualTo(2);
+        assertThat(service.addAmount(alice, water.getId(), today, 4)).isEqualTo(6);
+        var row = service.rows(alice, today).getFirst();
+        assertThat(row.doneToday()).isFalse();
+        assertThat(row.amountToday()).isEqualTo(6);
+        assertThat(row.percent()).isEqualTo(75);
+        assertThat(service.totalXp(alice)).isZero();
+
+        service.addAmount(alice, water.getId(), today, 2);
+        assertThat(service.rows(alice, today).getFirst().doneToday()).isTrue();
+        assertThat(service.totalXp(alice)).isEqualTo(10);
+
+        // 減らして目標を下回ったら未達成に戻り、0 になったら記録が消える
+        service.addAmount(alice, water.getId(), today, -2);
+        assertThat(service.totalXp(alice)).isZero();
+        assertThat(service.addAmount(alice, water.getId(), today, -100)).isZero();
+        assertThat(service.rows(alice, today).getFirst().amountToday()).isZero();
+    }
+
+    @Test
+    void checkOnQuantityHabitFillsTargetAndUncheckClears() {
+        Habit reading = service.create(alice, "読書", Category.SKILL, 15, Set.of(DayOfWeek.values()), 30, 10, "分");
+        LocalDate today = LocalDate.now();
+        service.addAmount(alice, reading.getId(), today, 10);
+
+        service.toggle(alice, reading.getId(), today);
+        var row = service.rows(alice, today).getFirst();
+        assertThat(row.doneToday()).isTrue();
+        assertThat(row.amountToday()).isEqualTo(30);
+
+        service.toggle(alice, reading.getId(), today);
+        assertThat(service.rows(alice, today).getFirst().amountToday()).isZero();
+    }
+
+    @Test
+    void habitsOffTodayAreNotUnfinished() {
+        LocalDate today = LocalDate.now();
+        DayOfWeek other = today.getDayOfWeek().plus(1);
+        service.create(alice, "今日やる", Category.BODY, 10, Set.of(today.getDayOfWeek()), 1, 1, null);
+        service.create(alice, "今日は休み", Category.BODY, 10, Set.of(other), 1, 1, null);
+
+        var rows = service.rows(alice, today);
+        assertThat(rows).filteredOn(HabitService.HabitRow::scheduledToday)
+                .extracting(r -> r.habit().getName()).containsExactly("今日やる");
+        assertThat(service.unfinishedToday(alice, today)).extracting(Habit::getName).containsExactly("今日やる");
+        assertThat(service.lastWeek(alice, today).getLast().total()).isEqualTo(1);
     }
 
     @Test

@@ -8,7 +8,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 /** アプリの利用者。USER は SQL の予約語なので app_user テーブルにする。 */
 @Entity
@@ -42,6 +44,12 @@ public class AppUser {
     /** ユーザーが選んだメインカラー（#rrggbb）。未設定なら初期値を使う。 */
     @Column(length = 7)
     private String themeColor;
+
+    /** リマインダーを送る時刻。null なら送らない。 */
+    private LocalTime reminderTime;
+
+    /** 最後にリマインダーの判定をした日（同じ日に2回送らないため）。 */
+    private LocalDate lastRemindedOn;
 
     /** 招待リンク用のコード。初めて使うときに作る。 */
     @Column(length = 16, unique = true)
@@ -83,6 +91,22 @@ public class AppUser {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public LocalTime getReminderTime() {
+        return reminderTime;
+    }
+
+    public void setReminderTime(LocalTime reminderTime) {
+        this.reminderTime = reminderTime;
+    }
+
+    public LocalDate getLastRemindedOn() {
+        return lastRemindedOn;
+    }
+
+    public void setLastRemindedOn(LocalDate lastRemindedOn) {
+        this.lastRemindedOn = lastRemindedOn;
     }
 
     public String getInviteCode() {

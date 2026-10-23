@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('記録')}"></head>
+<body>
+<header th:replace="~{fragments :: header('stats')}"></header>
+
+<main>
+    <div class="page-head">
+        <h1>記録</h1>
+        <p>これまでの積み重ねを振り返りましょう。</p>
+    </div>
+
+    <!-- 月のカレンダー -->
+    <section class="panel">
+        <div class="panel-head month-head">
+            <a class="icon-button" th:href="@{/stats(month=${prevMonth})}" aria-label="前の月">‹</a>
+            <h2 th:text="${#temporals.format(calendar.month.atDay(1), 'yyyy年M月')}">2026年10月</h2>
+            <a class="icon-button" th:if="${nextMonth}" th:href="@{/stats(month=${nextMonth})}" aria-label="次の月">›</a>
+            <span class="icon-button placeholder" th:unless="${nextMonth}"></span>
+        </div>
+
+        <div class="calendar">
+            <div class="calendar-row calendar-labels">
+                <span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span>
+            </div>
+            <div class="calendar-row" th:each="week : ${calendar.weeks}">
+                <span th:each="day : ${week}" class="calendar-day"
+                      th:classappend="|lv${day.level()} ${day.today ? 'today' : ''} ${day.date == null ? 'blank' : ''}|"
+                      th:title="${day.date != null and day.total > 0 and !day.future} ? |${day.done} / ${day.total} 達成| : ''">
+                    <span th:if="${day.date}" th:text="${day.date.dayOfMonth}">1</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="calendar-legend">
+            <span>少</span><i class="lv0"></i><i class="lv1"></i><i class="lv2"></i><i class="lv3"></i><i class="lv4"></i><span>多</span>
+        </div>
+
+        <dl class="summary">
+            <div><dt>達成率</dt><dd><span th:text="${calendar.rate}">0</span><small>%</small></dd></div>
+            <div><dt>全部達成した日</dt><dd><span th:text="${calendar.perfectDays}">0</span><small>日</small></dd></div>
+            <div><dt>達成した回数</dt><dd><span th:text="${calendar.completions}">0</span><small>回</small></dd></div>
+        </dl>
+    </section>
+
+    <!-- 習慣ごとの統計 -->
+    <section class="panel">
+        <div class="panel-head"><h2>習慣ごとの統計</h2></div>
+        <p class="muted" th:if="${habitStats.isEmpty()}">まだ習慣がありません。</p>
+
+        <div class="habit-stats" th:each="s : ${habitStats}">
+            <div class="habit-stats-head">
+                <span class="item-icon"><svg th:replace="~{icons :: icon(${s.habit.category.icon})}"></svg></span>
+                <div class="item-main">
+                    <p class="item-title" th:text="${s.habit.name}"></p>
+                    <p class="item-sub">
+                        <span th:text="${s.habit.scheduleLabel}"></span>
+                        <span th:if="${s.habit.quantity}" th:text="| ・ 目標 ${s.habit.targetLabel}|"></span>
+                    </p>
+                </div>
+            </div>
+            <dl class="stat-grid">
+                <div><dt>直近30日の達成率</dt><dd><span th:text="${s.rate30}">0</span><small>%</small></dd></div>
+                <div><dt>連続日数</dt><dd><span th:text="${s.currentStreak}">0</span><small>日</small></dd></div>
+                <div><dt>最長記録</dt><dd><span th:text="${s.bestStreak}">0</span><small>日</small></dd></div>
+                <div><dt>達成した回数</dt><dd><span th:text="${s.total}">0</span><small>回</small></dd></div>
+            </dl>
+            <div class="weekday-bars" aria-label="曜日ごとの達成率（直近12週）">
+                <div class="weekday-bar" th:each="w : ${s.weekdays}" th:classappend="${w.scheduled == 0} ? 'off'"
+                     th:title="${w.scheduled == 0} ? 'お休みの曜日' : |${w.done} / ${w.scheduled}（${w.percent()}%）|">
+                    <div class="weekday-track"><div th:style="|height: ${w.percent()}%|"></div></div>
+                    <span th:text="${w.label}">月</span>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+</body>
+</html>

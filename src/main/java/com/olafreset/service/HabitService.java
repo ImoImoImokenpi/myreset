@@ -8,8 +8,10 @@ import com.olafreset.domain.Reflection;
 import com.olafreset.repository.HabitLogRepository;
 import com.olafreset.repository.HabitRepository;
 import com.olafreset.repository.ReflectionRepository;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,11 +25,35 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class HabitService {
 
-    /** ダッシュボードの1行分（習慣・今日の達成状況・連続日数・直近7日）。 */
-    public record HabitRow(Habit habit, boolean doneToday, int streak, List<Boolean> lastWeek) {
+    /** 直近7日の印の状態。CSS のクラス名としても使う。 */
+    public enum DayMark {
+        DONE("on"), MISSED(""), OFF("off");
+
+        private final String css;
+
+        DayMark(String css) {
+            this.css = css;
+        }
+
+        public String getCss() {
+            return css;
+        }
     }
 
-    /** 直近7日の1日分のまとめ。 */
+    /**
+     * ダッシュボードの1行分。
+     * scheduledToday: 今日が実施日か / amountToday: 今日記録した量 / streak: 連続日数 / lastWeek: 直近7日の印
+     */
+    public record HabitRow(Habit habit, boolean scheduledToday, boolean doneToday, int amountToday,
+                           int streak, List<DayMark> lastWeek) {
+
+        /** 目標に対する今日の進み具合（0〜100）。 */
+        public int percent() {
+            return Math.min(100, amountToday * 100 / habit.getTarget());
+        }
+    }
+
+    /** 直近7日の1日分のまとめ。total はその日が実施日の習慣の数。 */
     public record DaySummary(LocalDate date, int done, int total, int xp) {
     }
 
@@ -45,46 +71,59 @@ public class HabitService {
         return habits.findByOwnerAndActiveTrueOrderByCategoryAscIdAsc(user);
     }
 
+    /** 習慣ごとの、達成した日の集合。 */
+    Map<Long, Set<LocalDate>> completedDates(AppUser user) {
+        Map<Long, Set<LocalDate>> result = new HashMap<>();
+        for (HabitLog log : logs.findCompletedByOwner(user)) {
+            result.computeIfAbsent(log.getHabit().getId(), k -> new HashSet<>()).add(log.getDate());
+        }
+        return result;
+    }
+
     public List<HabitRow> rows(AppUser user, LocalDate today) {
+        Map<Long, Set<LocalDate>> done = completedDates(user);
+        Map<Long, Integer> amounts = logs.findByOwnerAndDate(user, today).stream()
+                .collect(Collectors.toMap(l -> l.getHabit().getId(), HabitLog::getAmount));
         List<HabitRow> rows = new ArrayList<>();
         for (Habit habit : activeHabits(user)) {
-            Set<LocalDate> doneDates = logs.findByHabitOrderByDateDesc(habit).stream()
-                    .map(HabitLog::getDate)
-                    .collect(Collectors.toCollection(HashSet::new));
-            List<Boolean> lastWeek = new ArrayList<>();
+            Set<LocalDate> doneDates = done.getOrDefault(habit.getId(), Set.of());
+            List<DayMark> lastWeek = new ArrayList<>();
             for (int i = 6; i >= 0; i--) {
-                lastWeek.add(doneDates.contains(today.minusDays(i)));
+                LocalDate d = today.minusDays(i);
+                lastWeek.add(doneDates.contains(d) ? DayMark.DONE
+                        : habit.isScheduledOn(d) ? DayMark.MISSED : DayMark.OFF);
             }
-            rows.add(new HabitRow(habit, doneDates.contains(today), streak(doneDates, today), lastWeek));
+            rows.add(new HabitRow(habit, habit.isScheduledOn(today), doneDates.contains(today),
+                    amounts.getOrDefault(habit.getId(), 0), Streaks.current(habit, doneDates, today), lastWeek));
         }
         return rows;
     }
 
-    /** 今日（未達成なら昨日）から遡って何日連続で達成しているか。 */
-    static int streak(Set<LocalDate> doneDates, LocalDate today) {
-        LocalDate day = doneDates.contains(today) ? today : today.minusDays(1);
-        int count = 0;
-        while (doneDates.contains(day)) {
-            count++;
-            day = day.minusDays(1);
-        }
-        return count;
-    }
-
     public List<DaySummary> lastWeek(AppUser user, LocalDate today) {
-        int total = activeHabits(user).size();
+        List<Habit> active = activeHabits(user);
         Map<LocalDate, List<HabitLog>> byDate = logs.findByHabitOwnerAndDateBetween(user, today.minusDays(6), today)
                 .stream()
-                .filter(l -> l.getHabit().isActive())
+                .filter(l -> l.isCompleted() && l.getHabit().isActive())
                 .collect(Collectors.groupingBy(HabitLog::getDate));
         List<DaySummary> days = new ArrayList<>();
         for (int i = 6; i >= 0; i--) {
             LocalDate d = today.minusDays(i);
-            List<HabitLog> dayLogs = byDate.getOrDefault(d, List.of());
+            int total = (int) active.stream().filter(h -> h.isScheduledOn(d) && !h.getCreatedAt().isAfter(d)).count();
+            List<HabitLog> dayLogs = byDate.getOrDefault(d, List.of()).stream()
+                    .filter(l -> l.getHabit().isScheduledOn(d))
+                    .toList();
             int xp = dayLogs.stream().mapToInt(HabitLog::getXp).sum();
             days.add(new DaySummary(d, dayLogs.size(), total, xp));
         }
         return days;
+    }
+
+    /** 今日が実施日で、まだ達成していない習慣（リマインダー用）。 */
+    public List<Habit> unfinishedToday(AppUser user, LocalDate today) {
+        return rows(user, today).stream()
+                .filter(r -> r.scheduledToday() && !r.doneToday())
+                .map(HabitRow::habit)
+                .toList();
     }
 
     public long totalXp(AppUser user) {
@@ -97,7 +136,15 @@ public class HabitService {
 
     @Transactional
     public Habit create(AppUser user, String name, Category category, int xp) {
-        return habits.save(new Habit(user, name.strip(), category, xp));
+        return create(user, name, category, xp, Set.of(DayOfWeek.values()), 1, 1, null);
+    }
+
+    @Transactional
+    public Habit create(AppUser user, String name, Category category, int xp,
+                        Set<DayOfWeek> days, int target, int step, String unit) {
+        Habit habit = new Habit(user, name.strip(), category, xp);
+        habit.configure(days, target, step, unit);
+        return habits.save(habit);
     }
 
     @Transactional
@@ -121,13 +168,37 @@ public class HabitService {
         return habit.isShared();
     }
 
-    /** 達成チェックを付けたり外したりする。 */
+    /**
+     * 達成チェックを付けたり外したりする。
+     * 量の習慣では、チェックを付けると目標量まで記録し、外すと記録を消す。
+     */
     @Transactional
     public void toggle(AppUser user, long habitId, LocalDate date) {
         Habit habit = ownHabit(user, habitId);
-        logs.findByHabitAndDate(habit, date).ifPresentOrElse(
-                logs::delete,
-                () -> logs.save(new HabitLog(habit, date)));
+        var existing = logs.findByHabitAndDate(habit, date);
+        if (existing.isPresent() && existing.get().isCompleted()) {
+            logs.delete(existing.get());
+        } else if (existing.isPresent()) {
+            existing.get().setAmount(habit.getTarget());
+        } else {
+            logs.save(new HabitLog(habit, date, habit.getTarget()));
+        }
+    }
+
+    /** 量を増減する（「＋」「−」ボタン）。0 になったら記録を消す。 */
+    @Transactional
+    public int addAmount(AppUser user, long habitId, LocalDate date, int delta) {
+        Habit habit = ownHabit(user, habitId);
+        var existing = logs.findByHabitAndDate(habit, date);
+        int amount = Math.max(0, existing.map(HabitLog::getAmount).orElse(0) + delta);
+        if (amount == 0) {
+            existing.ifPresent(logs::delete);
+        } else if (existing.isPresent()) {
+            existing.get().setAmount(amount);
+        } else {
+            logs.save(new HabitLog(habit, date, amount));
+        }
+        return amount;
     }
 
     /** 他のユーザーの習慣は存在しないものとして扱う。 */

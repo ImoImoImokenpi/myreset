@@ -29,6 +29,39 @@
                     </label>
                 </div>
             </fieldset>
+            <fieldset class="field field-days">
+                <legend>実施する曜日</legend>
+                <div class="day-picker">
+                    <label th:each="w : ${weekdays}">
+                        <input type="checkbox" th:field="*{days}" th:value="${w.day}">
+                        <span th:text="${w.label}">月</span>
+                    </label>
+                </div>
+                <small class="error" th:if="${#fields.hasErrors('anyDay')}" th:errors="*{anyDay}"></small>
+            </fieldset>
+            <div class="field field-target">
+                <label class="checkbox">
+                    <input type="checkbox" th:field="*{useTarget}">
+                    <span>回数・時間の目標を決める（例：水を8杯、読書30分）</span>
+                </label>
+                <div class="target-fields">
+                    <label class="field">
+                        <span>1日の目標</span>
+                        <input type="number" th:field="*{target}" min="1" max="10000" inputmode="numeric">
+                    </label>
+                    <label class="field">
+                        <span>単位</span>
+                        <input type="text" th:field="*{unit}" maxlength="10" placeholder="回・杯・分 など">
+                    </label>
+                    <label class="field">
+                        <span>＋ボタン1回で増やす量</span>
+                        <input type="number" th:field="*{step}" min="1" max="1000" inputmode="numeric">
+                    </label>
+                </div>
+                <small class="error" th:if="${#fields.hasErrors('target')}" th:errors="*{target}"></small>
+                <small class="error" th:if="${#fields.hasErrors('step')}" th:errors="*{step}"></small>
+                <small class="error" th:if="${#fields.hasErrors('unit')}" th:errors="*{unit}"></small>
+            </div>
             <label class="field field-xp">
                 <span>XP</span>
                 <input type="number" th:field="*{xp}" min="1" max="100" inputmode="numeric">
@@ -54,7 +87,10 @@
                         <span th:text="${h.name}"></span>
                         <span class="badge subtle" th:unless="${h.shared}">非公開</span>
                     </p>
-                    <p class="item-sub" th:text="|${h.category.label} ・ ${h.xp} XP|"></p>
+                    <p class="item-sub">
+                        <span th:text="|${h.category.label} ・ ${h.xp} XP ・ ${h.scheduleLabel}|"></span>
+                        <span th:if="${h.quantity}" th:text="| ・ 目標 ${h.targetLabel}|"></span>
+                    </p>
                 </div>
                 <button type="button" class="icon-button" data-rename-toggle aria-label="名前を変更" title="名前を変更">
                     <svg th:replace="~{icons :: icon('pen')}"></svg>

@@ -2,12 +2,15 @@ package com.olafreset.web;
 
 import com.olafreset.domain.AppUser;
 import com.olafreset.domain.Category;
+import com.olafreset.domain.Habit;
 import com.olafreset.service.FriendService;
 import com.olafreset.service.HabitService;
 import com.olafreset.service.HabitService.HabitRow;
 import com.olafreset.service.Level;
 import jakarta.validation.Valid;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -35,13 +38,25 @@ public class HomeController {
         return Category.values();
     }
 
+    /** 曜日の選択肢（月〜日）。 */
+    public record WeekdayOption(DayOfWeek day, String label) {
+    }
+
+    @ModelAttribute("weekdays")
+    List<WeekdayOption> weekdays() {
+        return Arrays.stream(DayOfWeek.values()).map(d -> new WeekdayOption(d, Habit.shortName(d))).toList();
+    }
+
     @GetMapping("/")
     String dashboard(@ModelAttribute(name = "currentUser", binding = false) AppUser me, Model model) {
         LocalDate today = LocalDate.now();
         model.addAttribute("today", today);
         List<HabitRow> rows = service.rows(me, today);
-        model.addAttribute("rows", rows);
-        model.addAttribute("doneCount", rows.stream().filter(HabitRow::doneToday).count());
+        // 今日が実施日の習慣と、お休みの習慣に分ける
+        List<HabitRow> todays = rows.stream().filter(HabitRow::scheduledToday).toList();
+        model.addAttribute("rows", todays);
+        model.addAttribute("restRows", rows.stream().filter(r -> !r.scheduledToday()).toList());
+        model.addAttribute("doneCount", todays.stream().filter(HabitRow::doneToday).count());
         model.addAttribute("bestStreak", rows.stream().mapToInt(HabitRow::streak).max().orElse(0));
         model.addAttribute("week", service.lastWeek(me, today));
         long totalXp = service.totalXp(me);
@@ -55,6 +70,14 @@ public class HomeController {
     @PostMapping("/habits/{id}/toggle")
     String toggle(@ModelAttribute(name = "currentUser", binding = false) AppUser me, @PathVariable long id) {
         service.toggle(me, id, LocalDate.now());
+        return "redirect:/";
+    }
+
+    /** 量の習慣の「＋」「−」。 */
+    @PostMapping("/habits/{id}/amount")
+    String amount(@ModelAttribute(name = "currentUser", binding = false) AppUser me, @PathVariable long id,
+                  @RequestParam int delta) {
+        service.addAmount(me, id, LocalDate.now(), Math.max(-10000, Math.min(10000, delta)));
         return "redirect:/";
     }
 
@@ -82,7 +105,10 @@ public class HomeController {
             model.addAttribute("habits", service.activeHabits(me));
             return "habits";
         }
-        service.create(me, habitForm.getName(), habitForm.getCategory(), habitForm.getXp());
+        boolean quantity = habitForm.isUseTarget();
+        service.create(me, habitForm.getName(), habitForm.getCategory(), habitForm.getXp(), habitForm.getDays(),
+                quantity ? habitForm.getTarget() : 1, quantity ? habitForm.getStep() : 1,
+                quantity ? habitForm.getUnit() : null);
         ra.addFlashAttribute("message", "「" + habitForm.getName().strip() + "」を追加しました");
         return "redirect:/habits";
     }

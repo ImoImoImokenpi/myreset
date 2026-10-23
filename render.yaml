@@ -13,6 +13,9 @@ services:
       # 「ログインしたままにする」の署名鍵。Render が自動で生成する
       - key: REMEMBER_ME_KEY
         generateValue: true
+      # 外部の cron サービスから /cron/reminders?key=... を呼ぶときの鍵。Render が自動で生成する
+      - key: CRON_KEY
+        generateValue: true
       # 以下は作成時に Render の画面で入力する
       # Neon の接続文字列（postgresql://ユーザー:パスワード@ホスト/DB名?sslmode=require）をそのまま貼る
       - key: DATABASE_URL

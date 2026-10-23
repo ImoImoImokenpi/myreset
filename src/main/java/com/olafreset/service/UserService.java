@@ -7,6 +7,7 @@ import com.olafreset.repository.CheerRepository;
 import com.olafreset.repository.FriendshipRepository;
 import com.olafreset.repository.HabitLogRepository;
 import com.olafreset.repository.HabitRepository;
+import com.olafreset.repository.PushSubscriptionRepository;
 import com.olafreset.repository.ReflectionRepository;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -41,13 +42,15 @@ public class UserService implements UserDetailsService {
     private final ReflectionRepository reflections;
     private final FriendshipRepository friendships;
     private final CheerRepository cheers;
+    private final PushSubscriptionRepository pushSubscriptions;
     private final PasswordEncoder passwordEncoder;
     private final boolean registrationOpen;
     private final String adminUsername;
 
     public UserService(AppUserRepository users, HabitRepository habits, HabitLogRepository logs,
                        ReflectionRepository reflections, FriendshipRepository friendships,
-                       CheerRepository cheers, PasswordEncoder passwordEncoder,
+                       CheerRepository cheers, PushSubscriptionRepository pushSubscriptions,
+                       PasswordEncoder passwordEncoder,
                        @Value("${app.registration-open:true}") boolean registrationOpen,
                        @Value("${app.admin-username:}") String adminUsername) {
         this.users = users;
@@ -56,6 +59,7 @@ public class UserService implements UserDetailsService {
         this.reflections = reflections;
         this.friendships = friendships;
         this.cheers = cheers;
+        this.pushSubscriptions = pushSubscriptions;
         this.passwordEncoder = passwordEncoder;
         this.registrationOpen = registrationOpen;
         this.adminUsername = adminUsername.strip();
@@ -137,6 +141,7 @@ public class UserService implements UserDetailsService {
             throw new CannotDeleteSelfException();
         }
         AppUser target = users.findById(userId).orElseThrow(NoSuchElementException::new);
+        pushSubscriptions.deleteByUser(target);
         cheers.deleteInvolving(target);
         friendships.deleteInvolving(target);
         logs.deleteByOwner(target);

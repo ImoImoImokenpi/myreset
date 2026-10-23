@@ -1,6 +1,7 @@
 package com.olafreset.web;
 
 import com.olafreset.domain.AppUser;
+import com.olafreset.service.ReminderService;
 import com.olafreset.service.UserService;
 import com.olafreset.service.UserService.UsernameTakenException;
 import jakarta.servlet.ServletException;
@@ -26,10 +27,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AccountController {
 
     private final UserService users;
+    private final ReminderService reminders;
     private final RequestCache requestCache = new HttpSessionRequestCache();
 
-    public AccountController(UserService users) {
+    public AccountController(UserService users, ReminderService reminders) {
         this.users = users;
+        this.reminders = reminders;
     }
 
     @GetMapping("/login")
@@ -91,11 +94,17 @@ public class AccountController {
     }
 
     @GetMapping("/account")
-    String account(Model model) {
+    String account(@ModelAttribute(name = "currentUser", binding = false) AppUser me, Model model) {
         if (!model.containsAttribute("passwordForm")) {
             model.addAttribute("passwordForm", new PasswordForm());
         }
+        addReminderInfo(me, model);
         return "account";
+    }
+
+    private void addReminderInfo(AppUser me, Model model) {
+        model.addAttribute("vapidKey", reminders.publicKey());
+        model.addAttribute("deviceCount", reminders.deviceCount(me));
     }
 
     @PostMapping("/account/theme")
@@ -112,12 +121,14 @@ public class AccountController {
 
     @PostMapping("/account/password")
     String changePassword(@ModelAttribute(name = "currentUser", binding = false) AppUser me,
-                          @Valid PasswordForm passwordForm, BindingResult result, RedirectAttributes ra) {
+                          @Valid PasswordForm passwordForm, BindingResult result, Model model,
+                          RedirectAttributes ra) {
         if (!result.hasErrors()
                 && !users.changePassword(me, passwordForm.getCurrentPassword(), passwordForm.getNewPassword())) {
             result.rejectValue("currentPassword", "wrong", "現在のパスワードが違います");
         }
         if (result.hasErrors()) {
+            addReminderInfo(me, model);
             return "account";
         }
         ra.addFlashAttribute("message", "パスワードを変更しました");
