@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('フレンド')}"></head>
+<body>
+<header th:replace="~{fragments :: header('friends')}"></header>
+
+<main>
+    <p th:replace="~{fragments :: flash}"></p>
+
+    <div class="page-head">
+        <h1>フレンド</h1>
+        <p>フレンドの今日の進捗を見て、応援を送りましょう。</p>
+    </div>
+
+    <!-- 届いている申請 -->
+    <section class="panel" th:unless="${incoming.isEmpty()}">
+        <div class="panel-head">
+            <h2>フレンド申請</h2>
+            <span class="count" th:text="${incoming.size()}">1</span>
+        </div>
+        <ul class="item-list">
+            <li th:each="f : ${incoming}">
+                <span class="avatar" th:style="|--avatar: ${f.requester.themeColor}|"
+                      th:text="${#strings.toUpperCase(#strings.substring(f.requester.username, 0, 1))}">U</span>
+                <div class="item-main">
+                    <p class="item-title" th:text="${f.requester.username}"></p>
+                    <p class="item-sub">フレンド申請が届いています</p>
+                </div>
+                <form th:action="@{/friends/requests/{id}/accept(id=${f.id})}" method="post">
+                    <button type="submit" class="button small">承認</button>
+                </form>
+                <form th:action="@{/friends/requests/{id}/dismiss(id=${f.id})}" method="post">
+                    <button type="submit" class="icon-button" aria-label="断る" title="断る">
+                        <svg th:replace="~{icons :: icon('x')}"></svg>
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </section>
+
+    <!-- 今日のフレンド -->
+    <section class="panel">
+        <div class="panel-head">
+            <h2>今日のフレンド</h2>
+            <span class="count" th:text="${board.size()}">0</span>
+        </div>
+
+        <div class="empty-state" th:if="${board.isEmpty()}">
+            <p>まだフレンドがいません</p>
+            <p class="small">下の「フレンドを追加」から、ユーザー名か招待リンクで追加できます。</p>
+        </div>
+
+        <ul class="friend-list">
+            <li th:each="row : ${board}" th:classappend="${row.total > 0 and row.done == row.total} ? 'complete'">
+                <div class="friend-ring" th:style="|--ring: ${row.user.themeColor}|">
+                    <svg viewBox="0 0 48 48" aria-hidden="true">
+                        <circle class="ring-track" cx="24" cy="24" r="21" pathLength="100"></circle>
+                        <circle class="ring-fill" cx="24" cy="24" r="21" pathLength="100"
+                                th:attr="stroke-dasharray=|${row.percent()} 100|"></circle>
+                    </svg>
+                    <span class="avatar" th:style="|--avatar: ${row.user.themeColor}|"
+                          th:text="${#strings.toUpperCase(#strings.substring(row.user.username, 0, 1))}">U</span>
+                </div>
+
+                <div class="friend-main">
+                    <p class="friend-name">
+                        <span th:text="${row.user.username}"></span>
+                        <span class="badge subtle" th:text="|Lv ${row.level.level}|">Lv 1</span>
+                    </p>
+                    <p class="habit-meta">
+                        <span class="meta-item" th:text="${row.total == 0} ? '公開中の習慣なし' : |${row.done} / ${row.total} 達成|"></span>
+                        <span class="meta-item streak" th:if="${row.bestStreak > 0}">
+                            <svg th:replace="~{icons :: icon('flame')}"></svg>
+                            <span th:text="|${row.bestStreak}日|"></span>
+                        </span>
+                    </p>
+                    <div class="chips" th:unless="${row.habits.isEmpty()}">
+                        <span class="chip" th:each="h : ${row.habits}" th:classappend="${h.doneToday} ? 'on'">
+                            <th:block th:if="${h.doneToday}"><svg th:replace="~{icons :: icon('check')}"></svg></th:block>
+                            <span th:text="${h.habit.name}"></span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="friend-actions">
+                    <form th:action="@{/friends/{id}/cheer(id=${row.user.id})}" method="post">
+                        <button type="submit" class="cheer" th:classappend="${row.cheered} ? 'on'"
+                                th:aria-label="${row.cheered} ? '応援を取り消す' : '応援する'"
+                                th:title="${row.cheered} ? '応援を取り消す' : '応援する'">
+                            <svg th:replace="~{icons :: icon('heart')}"></svg>
+                            <span th:text="${row.cheered} ? '応援済み' : '応援'">応援</span>
+                        </button>
+                    </form>
+                    <details class="menu">
+                        <summary class="icon-button" aria-label="その他"><svg th:replace="~{icons :: icon('more')}"></svg></summary>
+                        <form th:action="@{/friends/{id}/remove(id=${row.user.id})}" method="post"
+                              th:data-name="${row.user.username}"
+                              onsubmit="return confirm(this.dataset.name + ' さんとのフレンドを解除しますか？');">
+                            <button type="submit" class="menu-item danger-text">フレンドを解除</button>
+                        </form>
+                    </details>
+                </div>
+            </li>
+        </ul>
+    </section>
+
+    <!-- フレンドを追加 -->
+    <section class="panel">
+        <div class="panel-head">
+            <h2><svg th:replace="~{icons :: icon('friends')}"></svg>フレンドを追加</h2>
+        </div>
+
+        <form th:action="@{/friends/request}" method="post" class="inline-form">
+            <label class="field">
+                <span>ユーザー名で申請</span>
+                <input type="text" name="username" placeholder="例：taro" autocapitalize="none" maxlength="30" required>
+            </label>
+            <button type="submit" class="button">申請</button>
+        </form>
+
+        <div class="invite">
+            <p class="field-label">招待リンク（開いた人とすぐにフレンドになります）</p>
+            <div class="invite-box">
+                <svg th:replace="~{icons :: icon('link')}"></svg>
+                <input type="text" id="invite-url" th:value="${inviteUrl}" readonly aria-label="招待リンク">
+            </div>
+            <div class="invite-actions">
+                <button type="button" class="button ghost" id="copy-invite">
+                    <svg th:replace="~{icons :: icon('copy')}"></svg><span>コピー</span>
+                </button>
+                <button type="button" class="button ghost" id="share-invite" hidden>
+                    <svg th:replace="~{icons :: icon('share')}"></svg>共有
+                </button>
+                <form th:action="@{/friends/invite/reset}" method="post"
+                      onsubmit="return confirm('招待リンクを作り直しますか？前のリンクは使えなくなります。');">
+                    <button type="submit" class="link-button muted-link">リンクを作り直す</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="outgoing" th:unless="${outgoing.isEmpty()}">
+            <p class="field-label">申請中</p>
+            <ul class="item-list compact">
+                <li th:each="f : ${outgoing}">
+                    <span class="avatar" th:style="|--avatar: ${f.addressee.themeColor}|"
+                          th:text="${#strings.toUpperCase(#strings.substring(f.addressee.username, 0, 1))}">U</span>
+                    <div class="item-main">
+                        <p class="item-title" th:text="${f.addressee.username}"></p>
+                        <p class="item-sub">承認待ち</p>
+                    </div>
+                    <form th:action="@{/friends/requests/{id}/dismiss(id=${f.id})}" method="post">
+                        <button type="submit" class="link-button muted-link">取り消す</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </section>
+</main>
+
+<script>
+    (() => {
+        const input = document.getElementById('invite-url');
+        const copy = document.getElementById('copy-invite');
+        const share = document.getElementById('share-invite');
+        copy.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(input.value);
+            } catch {
+                input.select();
+                document.execCommand('copy');
+            }
+            copy.querySelector('span').textContent = 'コピーしました';
+            setTimeout(() => copy.querySelector('span').textContent = 'コピー', 2000);
+        });
+        if (navigator.share) {
+            share.hidden = false;
+            share.addEventListener('click', () => navigator.share({
+                title: 'MyReset',
+                text: 'MyReset で一緒に習慣を続けよう！',
+                url: input.value
+            }).catch(() => {}));
+        }
+    })();
+</script>
+</body>
+</html>

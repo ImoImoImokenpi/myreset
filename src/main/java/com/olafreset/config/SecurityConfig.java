@@ -27,7 +27,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/", true)
+                        // 招待リンクなどからログインに来た場合は元のページへ戻す
+                        .defaultSuccessUrl("/", false)
                         .permitAll())
                 .rememberMe(remember -> remember
                         .key(rememberMeKey)

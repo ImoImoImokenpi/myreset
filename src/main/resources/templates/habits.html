@@ -9,7 +9,7 @@
 
     <div class="page-head">
         <h1>習慣</h1>
-        <p>毎日取り組みたいことを登録しましょう。達成すると XP がもらえます。</p>
+        <p>毎日取り組みたいことを登録しましょう。達成すると XP がもらえます。目のアイコンで、フレンドに見せるかどうかを切り替えられます。</p>
     </div>
 
     <section class="panel">
@@ -50,9 +50,20 @@
             <li th:each="h : ${habits}">
                 <span class="item-icon"><svg th:replace="~{icons :: icon(${h.category.icon})}"></svg></span>
                 <div class="item-main">
-                    <p class="item-title" th:text="${h.name}"></p>
+                    <p class="item-title">
+                        <span th:text="${h.name}"></span>
+                        <span class="badge subtle" th:unless="${h.shared}">非公開</span>
+                    </p>
                     <p class="item-sub" th:text="|${h.category.label} ・ ${h.xp} XP|"></p>
                 </div>
+                <form th:action="@{/habits/{id}/share(id=${h.id})}" method="post">
+                    <button type="submit" class="icon-button"
+                            th:aria-label="${h.shared} ? 'フレンドに見せない' : 'フレンドに見せる'"
+                            th:title="${h.shared} ? 'フレンドに公開中（押すと非公開）' : '非公開（押すとフレンドに公開）'">
+                        <th:block th:if="${h.shared}"><svg th:replace="~{icons :: icon('eye')}"></svg></th:block>
+                        <th:block th:unless="${h.shared}"><svg th:replace="~{icons :: icon('eye-off')}"></svg></th:block>
+                    </button>
+                </form>
                 <form th:action="@{/habits/{id}/archive(id=${h.id})}" method="post"
                       onsubmit="return confirm('この習慣を一覧から外しますか？（獲得XPは残ります）');">
                     <button type="submit" class="icon-button danger" aria-label="外す">

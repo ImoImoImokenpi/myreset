@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.olafreset.domain.AppUser;
 import com.olafreset.domain.Category;
 import com.olafreset.domain.Habit;
+import com.olafreset.service.FriendService;
 import com.olafreset.service.HabitService;
 import com.olafreset.service.UserService;
 import org.hamcrest.Matchers;
@@ -37,6 +38,9 @@ class SecurityTests {
 
     @Autowired
     HabitService habits;
+
+    @Autowired
+    FriendService friends;
 
     AppUser admin;
     AppUser member;
@@ -103,6 +107,29 @@ class SecurityTests {
         mvc.perform(post("/habits/{id}/toggle", adminsHabit.getId()).with(user("member")).with(csrf()))
                 .andExpect(status().isNotFound());
         assertThat(habits.totalXp(admin)).isZero();
+    }
+
+    @Test
+    void inviteLinkSurvivesLoginAndMakesFriends() throws Exception {
+        String code = friends.inviteCode(admin);
+        MockHttpSession session = new MockHttpSession();
+
+        mvc.perform(get("/invite/{code}", code).session(session))
+                .andExpect(redirectedUrl("/login"));
+        String back = mvc.perform(post("/login").session(session).with(csrf())
+                        .param("username", "member").param("password", "password2"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn().getResponse().getRedirectedUrl();
+        assertThat(back).contains("/invite/" + code);
+
+        mvc.perform(get(back).session(session)).andExpect(redirectedUrl("/friends"));
+        assertThat(friends.areFriends(admin, member)).isTrue();
+    }
+
+    @Test
+    void cannotCheerNonFriend() throws Exception {
+        mvc.perform(post("/friends/{id}/cheer", admin.getId()).with(user("member")).with(csrf()))
+                .andExpect(status().isNotFound());
     }
 
     @Test

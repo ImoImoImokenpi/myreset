@@ -5,9 +5,13 @@ import com.olafreset.service.UserService;
 import com.olafreset.service.UserService.UsernameTakenException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -22,6 +26,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AccountController {
 
     private final UserService users;
+    private final RequestCache requestCache = new HttpSessionRequestCache();
 
     public AccountController(UserService users) {
         this.users = users;
@@ -49,7 +54,8 @@ public class AccountController {
 
     @PostMapping("/register")
     String register(@Valid RegisterForm registerForm, BindingResult result, Model model,
-                    HttpServletRequest request, RedirectAttributes ra) throws ServletException {
+                    HttpServletRequest request, HttpServletResponse response,
+                    RedirectAttributes ra) throws ServletException {
         if (!users.isRegistrationOpen()) {
             return "redirect:/register";
         }
@@ -70,6 +76,12 @@ public class AccountController {
         // 登録したらそのままログイン状態にする
         request.login(registerForm.getUsername().strip(), registerForm.getPassword());
         ra.addFlashAttribute("message", "ようこそ、" + registerForm.getUsername().strip() + " さん！");
+        // 招待リンクから来た場合は、そのリンクに戻る
+        SavedRequest saved = requestCache.getRequest(request, response);
+        if (saved != null && saved.getRedirectUrl().contains("/invite/")) {
+            requestCache.removeRequest(request, response);
+            return "redirect:" + saved.getRedirectUrl();
+        }
         return "redirect:/";
     }
 

@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import java.time.LocalDate;
+import org.hibernate.annotations.ColumnDefault;
 
 /** 毎日取り組む習慣（クエスト）。 */
 @Entity
@@ -38,6 +39,11 @@ public class Habit {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    /** フレンドに見せるか。既存のデータにも列を足せるよう DB に初期値を持たせる。 */
+    @ColumnDefault("true")
+    @Column(nullable = false)
+    private boolean shared = true;
 
     @Column(nullable = false)
     private LocalDate createdAt;
@@ -75,6 +81,14 @@ public class Habit {
 
     public boolean isActive() {
         return active;
+    }
+
+    public boolean isShared() {
+        return shared;
+    }
+
+    public void setShared(boolean shared) {
+        this.shared = shared;
     }
 
     public void archive() {

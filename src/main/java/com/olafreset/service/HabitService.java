@@ -106,6 +106,14 @@ public class HabitService {
         ownHabit(user, habitId).archive();
     }
 
+    /** フレンドに見せるかどうかを切り替える。 */
+    @Transactional
+    public boolean toggleShared(AppUser user, long habitId) {
+        Habit habit = ownHabit(user, habitId);
+        habit.setShared(!habit.isShared());
+        return habit.isShared();
+    }
+
     /** 達成チェックを付けたり外したりする。 */
     @Transactional
     public void toggle(AppUser user, long habitId, LocalDate date) {

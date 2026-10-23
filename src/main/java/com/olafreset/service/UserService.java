@@ -3,6 +3,8 @@ package com.olafreset.service;
 import com.olafreset.domain.AppUser;
 import com.olafreset.domain.AppUser.Role;
 import com.olafreset.repository.AppUserRepository;
+import com.olafreset.repository.CheerRepository;
+import com.olafreset.repository.FriendshipRepository;
 import com.olafreset.repository.HabitLogRepository;
 import com.olafreset.repository.HabitRepository;
 import com.olafreset.repository.ReflectionRepository;
@@ -37,18 +39,23 @@ public class UserService implements UserDetailsService {
     private final HabitRepository habits;
     private final HabitLogRepository logs;
     private final ReflectionRepository reflections;
+    private final FriendshipRepository friendships;
+    private final CheerRepository cheers;
     private final PasswordEncoder passwordEncoder;
     private final boolean registrationOpen;
     private final String adminUsername;
 
     public UserService(AppUserRepository users, HabitRepository habits, HabitLogRepository logs,
-                       ReflectionRepository reflections, PasswordEncoder passwordEncoder,
+                       ReflectionRepository reflections, FriendshipRepository friendships,
+                       CheerRepository cheers, PasswordEncoder passwordEncoder,
                        @Value("${app.registration-open:true}") boolean registrationOpen,
                        @Value("${app.admin-username:}") String adminUsername) {
         this.users = users;
         this.habits = habits;
         this.logs = logs;
         this.reflections = reflections;
+        this.friendships = friendships;
+        this.cheers = cheers;
         this.passwordEncoder = passwordEncoder;
         this.registrationOpen = registrationOpen;
         this.adminUsername = adminUsername.strip();
@@ -123,13 +130,15 @@ public class UserService implements UserDetailsService {
         users.findById(user.getId()).orElseThrow().setThemeColor(color.toLowerCase());
     }
 
-    /** ユーザーと、そのユーザーの習慣・記録・振り返りをすべて削除する。 */
+    /** ユーザーと、そのユーザーの習慣・記録・振り返り・フレンド関係・応援をすべて削除する。 */
     @Transactional
     public void delete(AppUser admin, long userId) {
         if (admin.getId() == userId) {
             throw new CannotDeleteSelfException();
         }
         AppUser target = users.findById(userId).orElseThrow(NoSuchElementException::new);
+        cheers.deleteInvolving(target);
+        friendships.deleteInvolving(target);
         logs.deleteByOwner(target);
         habits.deleteByOwner(target);
         reflections.deleteByOwner(target);

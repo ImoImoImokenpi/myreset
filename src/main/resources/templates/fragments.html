@@ -28,6 +28,13 @@
         <a th:href="@{/habits}" th:classappend="${active == 'habits'} ? 'active'">
             <svg th:replace="~{icons :: icon('list')}"></svg><span class="nav-label">習慣</span>
         </a>
+        <a th:href="@{/friends}" th:classappend="${active == 'friends'} ? 'active'">
+            <span class="nav-icon-wrap">
+                <svg th:replace="~{icons :: icon('friends')}"></svg>
+                <span class="nav-badge" th:if="${friendRequestCount > 0}" th:text="${friendRequestCount}">1</span>
+            </span>
+            <span class="nav-label">フレンド</span>
+        </a>
         <a th:if="${currentUser.admin}" th:href="@{/admin/users}"
            th:classappend="${active == 'admin'} ? 'active'">
             <svg th:replace="~{icons :: icon('users')}"></svg><span class="nav-label">管理</span>

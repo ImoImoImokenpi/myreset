@@ -2,6 +2,7 @@ package com.olafreset.web;
 
 import com.olafreset.domain.AppUser;
 import com.olafreset.domain.Category;
+import com.olafreset.service.FriendService;
 import com.olafreset.service.HabitService;
 import com.olafreset.service.HabitService.HabitRow;
 import jakarta.validation.Valid;
@@ -21,9 +22,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class HomeController {
 
     private final HabitService service;
+    private final FriendService friends;
 
-    public HomeController(HabitService service) {
+    public HomeController(HabitService service, FriendService friends) {
         this.service = service;
+        this.friends = friends;
     }
 
     @ModelAttribute("categories")
@@ -43,6 +46,7 @@ public class HomeController {
         model.addAttribute("level", service.level(me));
         model.addAttribute("totalXp", service.totalXp(me));
         model.addAttribute("reflection", service.reflectionText(me, today));
+        model.addAttribute("cheers", friends.cheersReceived(me, today));
         return "dashboard";
     }
 
@@ -78,6 +82,14 @@ public class HomeController {
         }
         service.create(me, habitForm.getName(), habitForm.getCategory(), habitForm.getXp());
         ra.addFlashAttribute("message", "「" + habitForm.getName().strip() + "」を追加しました");
+        return "redirect:/habits";
+    }
+
+    @PostMapping("/habits/{id}/share")
+    String toggleShare(@ModelAttribute(name = "currentUser", binding = false) AppUser me,
+                       @PathVariable long id, RedirectAttributes ra) {
+        boolean shared = service.toggleShared(me, id);
+        ra.addFlashAttribute("message", shared ? "フレンドに見せるようにしました" : "フレンドに見せないようにしました");
         return "redirect:/habits";
     }
 

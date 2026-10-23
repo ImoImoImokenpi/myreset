@@ -31,6 +31,18 @@
         </dl>
     </section>
 
+    <a class="cheers-banner" th:href="@{/friends}" th:unless="${cheers.isEmpty()}">
+        <span class="cheers-icon"><svg th:replace="~{icons :: icon('heart')}"></svg></span>
+        <span class="cheers-avatars">
+            <span class="avatar" th:each="u, st : ${cheers}" th:if="${st.index < 5}"
+                  th:style="|--avatar: ${u.themeColor}|"
+                  th:text="${#strings.toUpperCase(#strings.substring(u.username, 0, 1))}">U</span>
+        </span>
+        <span class="cheers-text"
+              th:text="${cheers.size() == 1} ? |${cheers[0].username} さんが応援しています|
+                                             : |${cheers[0].username} さんほか${cheers.size() - 1}人が応援しています|"></span>
+    </a>
+
     <section class="panel">
         <div class="panel-head">
             <h2>今日の習慣</h2>

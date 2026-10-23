@@ -43,6 +43,10 @@ public class AppUser {
     @Column(length = 7)
     private String themeColor;
 
+    /** 招待リンク用のコード。初めて使うときに作る。 */
+    @Column(length = 16, unique = true)
+    private String inviteCode;
+
     protected AppUser() {
     }
 
@@ -79,6 +83,14 @@ public class AppUser {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public String getInviteCode() {
+        return inviteCode;
+    }
+
+    public void setInviteCode(String inviteCode) {
+        this.inviteCode = inviteCode;
     }
 
     /** 画面の CSS にそのまま埋め込むので、#rrggbb 形式以外は初期値に置き換える。 */
