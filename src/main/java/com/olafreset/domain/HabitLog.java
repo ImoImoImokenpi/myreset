@@ -29,7 +29,7 @@ public class HabitLog {
     @Column(name = "log_date", nullable = false)
     private LocalDate date;
 
-    /** 記録した時点の XP（あとで習慣の XP を変えても過去の獲得分は変わらない）。 */
+    /** 記録した時点の習慣の XP（満額）。実際にもらえる XP は {@link #getEarnedXp()}。 */
     @Column(nullable = false)
     private int xp;
 
@@ -80,5 +80,17 @@ public class HabitLog {
 
     public int getXp() {
         return xp;
+    }
+
+    /**
+     * 実際にもらえる XP。量の習慣は進めた分だけもらえる（部分点）。
+     * 例：50XP・目標30分で10分なら 50 × 10 ÷ 30 = 16（切り捨て）。目標を超えても満額まで。
+     */
+    public int getEarnedXp() {
+        return earnedXp(xp, amount, habit.getTarget());
+    }
+
+    public static int earnedXp(int xp, int amount, int target) {
+        return xp * Math.min(amount, target) / target;
     }
 }

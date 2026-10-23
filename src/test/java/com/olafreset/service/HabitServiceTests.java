@@ -54,17 +54,39 @@ class HabitServiceTests {
         assertThat(row.doneToday()).isFalse();
         assertThat(row.amountToday()).isEqualTo(6);
         assertThat(row.percent()).isEqualTo(75);
-        assertThat(service.totalXp(alice)).isZero();
+        // 進めた分だけ XP がもらえる：10 × 6 ÷ 8 = 7（切り捨て）
+        assertThat(row.earnedToday()).isEqualTo(7);
+        assertThat(service.totalXp(alice)).isEqualTo(7);
 
         service.addAmount(alice, water.getId(), today, 2);
         assertThat(service.rows(alice, today).getFirst().doneToday()).isTrue();
         assertThat(service.totalXp(alice)).isEqualTo(10);
 
-        // 減らして目標を下回ったら未達成に戻り、0 になったら記録が消える
-        service.addAmount(alice, water.getId(), today, -2);
-        assertThat(service.totalXp(alice)).isZero();
+        // 目標を超えても満額まで
+        service.addAmount(alice, water.getId(), today, 4);
+        assertThat(service.totalXp(alice)).isEqualTo(10);
+
+        // 減らして目標を下回ったら未達成に戻り、XP も減る。0 になったら記録が消える
+        service.addAmount(alice, water.getId(), today, -6);
+        assertThat(service.rows(alice, today).getFirst().doneToday()).isFalse();
+        assertThat(service.totalXp(alice)).isEqualTo(7);
         assertThat(service.addAmount(alice, water.getId(), today, -100)).isZero();
         assertThat(service.rows(alice, today).getFirst().amountToday()).isZero();
+    }
+
+    @Test
+    void partialXpMatchesTheExample() {
+        // 50XP・目標30分で10分なら 50 × 10 ÷ 30 = 16（切り捨て）
+        Habit study = service.create(alice, "勉強", Category.SKILL, 50, Set.of(DayOfWeek.values()), 30, 10, "分");
+        LocalDate today = LocalDate.now();
+
+        service.addAmount(alice, study.getId(), today, 10);
+
+        assertThat(service.rows(alice, today).getFirst().earnedToday()).isEqualTo(16);
+        assertThat(service.totalXp(alice)).isEqualTo(16);
+        assertThat(service.level(alice).xpIntoLevel()).isEqualTo(16);
+        // 未達成なので連続日数には数えない
+        assertThat(service.rows(alice, today).getFirst().streak()).isZero();
     }
 
     @Test

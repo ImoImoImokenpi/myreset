@@ -62,7 +62,7 @@
         <ul class="habit-list">
             <li th:each="row : ${rows}" th:classappend="${row.doneToday} ? 'done'"
                 th:data-amount="${row.amountToday}" th:data-target="${row.habit.target}"
-                th:data-unit="${row.habit.unit ?: '回'}">
+                th:data-unit="${row.habit.unit ?: '回'}" th:data-xp="${row.habit.xp}">
                 <form th:action="@{/habits/{id}/toggle(id=${row.habit.id})}" method="post" data-instant="check">
                     <button type="submit" class="check" th:aria-label="${row.doneToday} ? 'チェックを外す' : '達成にする'">
                         <svg th:replace="~{icons :: icon('check')}"></svg>
@@ -80,7 +80,10 @@
                             <svg th:replace="~{icons :: icon(${row.habit.category.icon})}"></svg>
                             <span th:text="${row.habit.category.label}"></span>
                         </span>
-                        <span class="meta-item" th:text="|+${row.habit.xp} XP|"></span>
+                        <span class="meta-item" th:unless="${row.habit.quantity}" th:text="|+${row.habit.xp} XP|"></span>
+                        <span class="meta-item xp-progress" th:if="${row.habit.quantity}"
+                              th:classappend="${row.earnedToday() > 0} ? 'earned'"
+                              th:text="|+${row.earnedToday()} / ${row.habit.xp} XP|">+0 / 50 XP</span>
                         <span class="meta-item streak" th:if="${row.streak > 0}">
                             <svg th:replace="~{icons :: icon('flame')}"></svg>
                             <span th:text="|${row.streak}日|"></span>

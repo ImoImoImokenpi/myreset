@@ -47,6 +47,11 @@ public class HabitService {
     public record HabitRow(Habit habit, boolean scheduledToday, boolean doneToday, int amountToday,
                            int streak, List<DayMark> lastWeek) {
 
+        /** 今日ここまでにもらった XP（量の習慣は進めた分だけ）。 */
+        public int earnedToday() {
+            return HabitLog.earnedXp(habit.getXp(), amountToday, habit.getTarget());
+        }
+
         /** 目標に対する今日の進み具合（0〜100）。 */
         public int percent() {
             return Math.min(100, amountToday * 100 / habit.getTarget());
@@ -112,7 +117,7 @@ public class HabitService {
             List<HabitLog> dayLogs = byDate.getOrDefault(d, List.of()).stream()
                     .filter(l -> l.getHabit().isScheduledOn(d))
                     .toList();
-            int xp = dayLogs.stream().mapToInt(HabitLog::getXp).sum();
+            int xp = dayLogs.stream().mapToInt(HabitLog::getEarnedXp).sum();
             days.add(new DaySummary(d, dayLogs.size(), total, xp));
         }
         return days;

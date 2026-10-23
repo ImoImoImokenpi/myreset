@@ -1174,6 +1174,12 @@ li.renaming .rename-form { display: flex; }
 
 .amount-buttons { display: flex; gap: 6px; flex-shrink: 0; }
 
+.xp-progress { font-variant-numeric: tabular-nums; }
+.xp-progress.earned { color: var(--accent); font-weight: 600; }
+
+.xp-progress { font-variant-numeric: tabular-nums; }
+.xp-progress.earned { color: var(--accent); font-weight: 600; }
+
 .step-button {
     min-width: 40px;
     height: 36px;

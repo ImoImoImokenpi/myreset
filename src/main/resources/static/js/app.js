@@ -25,6 +25,14 @@
                 li.querySelector('.amount-text').textContent = `${amount} / ${target}${li.dataset.unit}`;
                 li.querySelector('.amount-bar > div').style.width = `${Math.min(100, amount * 100 / target)}%`;
                 li.classList.toggle('done', amount >= target);
+                // 進めた分だけ XP がもらえる（サーバーと同じ計算：切り捨て、満額まで）
+                const xp = Number(li.dataset.xp);
+                const earned = Math.floor(xp * Math.min(amount, target) / target);
+                const xpText = li.querySelector('.xp-progress');
+                if (xpText) {
+                    xpText.textContent = `+${earned} / ${xp} XP`;
+                    xpText.classList.toggle('earned', earned > 0);
+                }
                 break;
             }
             case 'share':
