@@ -121,14 +121,17 @@
 
     <div class="grid-2">
         <section class="panel">
-            <div class="panel-head"><h2>直近7日</h2></div>
+            <div class="panel-head">
+                <h2>直近7日</h2>
+                <span class="muted small">達成度</span>
+            </div>
             <div class="chart">
-                <div class="chart-col" th:each="d, st : ${week}" th:classappend="${st.last} ? 'today'">
+                <div class="chart-col" th:each="d, st : ${week}" th:classappend="${st.last} ? 'today'"
+                     th:title="${d.total == 0} ? 'お休み' : |達成度 ${d.percent}%（目標達成 ${d.done} / ${d.total}、${d.xp} XP）|">
                     <div class="chart-track">
-                        <div class="chart-bar"
-                             th:style="|height: ${d.total == 0 ? 0 : d.done * 100 / d.total}%|"></div>
+                        <div class="chart-bar" th:style="|height: ${d.percent}%|"></div>
                     </div>
-                    <span class="chart-value" th:text="${d.done}"></span>
+                    <span class="chart-value" th:text="${d.total == 0} ? '−' : |${d.percent}%|">0%</span>
                     <span class="chart-label" th:text="${#temporals.format(d.date, 'E')}"></span>
                 </div>
             </div>

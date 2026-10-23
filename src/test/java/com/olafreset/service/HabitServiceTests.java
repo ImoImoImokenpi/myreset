@@ -90,6 +90,29 @@ class HabitServiceTests {
     }
 
     @Test
+    void lastWeekShowsAverageProgressIncludingPartialAmounts() {
+        LocalDate today = LocalDate.now();
+        Habit water = service.create(alice, "水", Category.LIFE, 10, Set.of(DayOfWeek.values()), 8, 1, "杯");
+        Habit pushUp = service.create(alice, "腕立て", Category.BODY, 10);
+        service.create(alice, "読書", Category.SKILL, 10);
+
+        assertThat(service.lastWeek(alice, today).getLast().percent()).isZero();
+
+        // 水 4/8（50%）＋ 腕立て 達成（100%）＋ 読書 0% → 150 ÷ 3 = 50%
+        service.addAmount(alice, water.getId(), today, 4);
+        service.toggle(alice, pushUp.getId(), today);
+        var day = service.lastWeek(alice, today).getLast();
+        assertThat(day.percent()).isEqualTo(50);
+        assertThat(day.done()).isEqualTo(1);
+        assertThat(day.total()).isEqualTo(3);
+        assertThat(day.xp()).isEqualTo(5 + 10);
+
+        // 目標を超えても 1つの習慣は 100% まで
+        service.addAmount(alice, water.getId(), today, 20);
+        assertThat(service.lastWeek(alice, today).getLast().percent()).isEqualTo(67);
+    }
+
+    @Test
     void checkOnQuantityHabitFillsTargetAndUncheckClears() {
         Habit reading = service.create(alice, "読書", Category.SKILL, 15, Set.of(DayOfWeek.values()), 30, 10, "分");
         LocalDate today = LocalDate.now();

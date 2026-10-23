@@ -58,8 +58,11 @@ public class HabitService {
         }
     }
 
-    /** 直近7日の1日分のまとめ。total はその日が実施日の習慣の数。 */
-    public record DaySummary(LocalDate date, int done, int total, int xp) {
+    /**
+     * 直近7日の1日分のまとめ。total はその日が実施日の習慣の数、done は目標まで達成した数。
+     * percent はその日の達成度（0〜100）：各習慣の「進めた量 ÷ 目標」（最大 100%）の平均。
+     */
+    public record DaySummary(LocalDate date, int done, int total, int xp, int percent) {
     }
 
     private final HabitRepository habits;
@@ -106,9 +109,10 @@ public class HabitService {
 
     public List<DaySummary> lastWeek(AppUser user, LocalDate today) {
         List<Habit> active = activeHabits(user);
+        // 目標に届いていない記録も、進めた分を達成度に入れる
         Map<LocalDate, List<HabitLog>> byDate = logs.findByHabitOwnerAndDateBetween(user, today.minusDays(6), today)
                 .stream()
-                .filter(l -> l.isCompleted() && l.getHabit().isActive())
+                .filter(l -> l.getHabit().isActive())
                 .collect(Collectors.groupingBy(HabitLog::getDate));
         List<DaySummary> days = new ArrayList<>();
         for (int i = 6; i >= 0; i--) {
@@ -117,8 +121,13 @@ public class HabitService {
             List<HabitLog> dayLogs = byDate.getOrDefault(d, List.of()).stream()
                     .filter(l -> l.getHabit().isScheduledOn(d))
                     .toList();
+            int done = (int) dayLogs.stream().filter(HabitLog::isCompleted).count();
             int xp = dayLogs.stream().mapToInt(HabitLog::getEarnedXp).sum();
-            days.add(new DaySummary(d, dayLogs.size(), total, xp));
+            double progress = dayLogs.stream()
+                    .mapToDouble(l -> Math.min(l.getAmount(), l.getHabit().getTarget()) / (double) l.getHabit().getTarget())
+                    .sum();
+            int percent = total == 0 ? 0 : (int) Math.round(progress * 100 / total);
+            days.add(new DaySummary(d, done, total, xp, Math.min(100, percent)));
         }
         return days;
     }
