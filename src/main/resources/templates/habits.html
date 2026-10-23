@@ -56,6 +56,9 @@
                     </p>
                     <p class="item-sub" th:text="|${h.category.label} ・ ${h.xp} XP|"></p>
                 </div>
+                <button type="button" class="icon-button" data-rename-toggle aria-label="名前を変更" title="名前を変更">
+                    <svg th:replace="~{icons :: icon('pen')}"></svg>
+                </button>
                 <form th:action="@{/habits/{id}/share(id=${h.id})}" method="post" data-instant="share">
                     <button type="submit" class="icon-button"
                             th:aria-label="${h.shared} ? 'フレンドに見せない' : 'フレンドに見せる'"
@@ -69,6 +72,12 @@
                     <button type="submit" class="icon-button danger" aria-label="外す">
                         <svg th:replace="~{icons :: icon('trash')}"></svg>
                     </button>
+                </form>
+                <form class="rename-form" th:action="@{/habits/{id}/rename(id=${h.id})}" method="post">
+                    <input type="text" name="name" th:value="${h.name}" maxlength="50" required
+                           aria-label="新しい名前">
+                    <button type="submit" class="button small">保存</button>
+                    <button type="button" class="button small ghost" data-rename-toggle>キャンセル</button>
                 </form>
             </li>
         </ul>

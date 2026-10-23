@@ -83,6 +83,10 @@ public class Habit {
         return active;
     }
 
+    public void rename(String name) {
+        this.name = name;
+    }
+
     public boolean isShared() {
         return shared;
     }

@@ -127,6 +127,25 @@ class SecurityTests {
     }
 
     @Test
+    void renameValidatesAndProtectsOtherUsersHabits() throws Exception {
+        Habit habit = habits.create(member, "読書", Category.SKILL, 10);
+
+        mvc.perform(post("/habits/{id}/rename", habit.getId()).with(user("member")).with(csrf())
+                        .param("name", "   "))
+                .andExpect(redirectedUrl("/habits"));
+        assertThat(habits.activeHabits(member).getFirst().getName()).isEqualTo("読書");
+
+        mvc.perform(post("/habits/{id}/rename", habit.getId()).with(user("admin")).with(csrf())
+                        .param("name", "乗っ取り"))
+                .andExpect(status().isNotFound());
+
+        mvc.perform(post("/habits/{id}/rename", habit.getId()).with(user("member")).with(csrf())
+                        .param("name", "読書30分"))
+                .andExpect(redirectedUrl("/habits"));
+        assertThat(habits.activeHabits(member).getFirst().getName()).isEqualTo("読書30分");
+    }
+
+    @Test
     void cannotCheerNonFriend() throws Exception {
         mvc.perform(post("/friends/{id}/cheer", admin.getId()).with(user("member")).with(csrf()))
                 .andExpect(status().isNotFound());

@@ -100,6 +100,13 @@ public class HabitService {
         return habits.save(new Habit(user, name.strip(), category, xp));
     }
 
+    @Transactional
+    public Habit rename(AppUser user, long habitId, String name) {
+        Habit habit = ownHabit(user, habitId);
+        habit.rename(name.strip());
+        return habit;
+    }
+
     /** 習慣を一覧から外す。獲得済みの XP は残す。 */
     @Transactional
     public void archive(AppUser user, long habitId) {

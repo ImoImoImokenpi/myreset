@@ -68,6 +68,38 @@
         }
     });
 
+    // 習慣の名前変更フォームの開閉
+    document.addEventListener('click', (event) => {
+        const toggle = event.target.closest('[data-rename-toggle]');
+        if (!toggle) {
+            return;
+        }
+        const li = toggle.closest('li');
+        const opening = !li.classList.contains('renaming');
+        closeRenameForms();
+        if (opening) {
+            li.classList.add('renaming');
+            const input = li.querySelector('.rename-form input[name=name]');
+            input.focus();
+            input.select();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeRenameForms();
+        }
+    });
+
+    /** 開いている名前変更フォームを閉じ、入力を元の名前に戻す。 */
+    function closeRenameForms() {
+        document.querySelectorAll('li.renaming').forEach(li => {
+            li.classList.remove('renaming');
+            const input = li.querySelector('.rename-form input[name=name]');
+            input.value = input.defaultValue;
+        });
+    }
+
     // 招待リンクのコピー・共有（本文が差し替わっても動くよう document で受ける）
     document.addEventListener('click', async (event) => {
         const copy = event.target.closest('#copy-invite');

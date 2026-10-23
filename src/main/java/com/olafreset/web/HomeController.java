@@ -87,6 +87,19 @@ public class HomeController {
         return "redirect:/habits";
     }
 
+    @PostMapping("/habits/{id}/rename")
+    String rename(@ModelAttribute(name = "currentUser", binding = false) AppUser me, @PathVariable long id,
+                  @RequestParam String name, RedirectAttributes ra) {
+        String newName = name.strip();
+        if (newName.isEmpty() || newName.length() > 50) {
+            ra.addFlashAttribute("message", "名前は1〜50文字にしてください");
+            return "redirect:/habits";
+        }
+        service.rename(me, id, newName);
+        ra.addFlashAttribute("message", "「" + newName + "」に変更しました");
+        return "redirect:/habits";
+    }
+
     @PostMapping("/habits/{id}/share")
     String toggleShare(@ModelAttribute(name = "currentUser", binding = false) AppUser me,
                        @PathVariable long id, RedirectAttributes ra) {

@@ -1077,6 +1077,22 @@ li.complete .friend-ring::after {
 .outgoing .item-list { margin: 0; }
 .outgoing .item-list li { padding-left: 0; padding-right: 0; }
 
+/* ---------- 習慣の名前変更 ---------- */
+
+.item-list li { flex-wrap: wrap; }
+
+.rename-form {
+    display: none;
+    flex-basis: 100%;
+    align-items: center;
+    gap: 8px;
+    padding-left: 54px;
+}
+
+li.renaming .rename-form { display: flex; }
+.rename-form input { flex: 1; height: 40px; }
+.rename-form .button { height: 40px; flex-shrink: 0; }
+
 /* ---------- スマホ ---------- */
 
 @media (max-width: 640px) {
@@ -1177,6 +1193,9 @@ li.complete .friend-ring::after {
     .swatches { grid-template-columns: repeat(5, 1fr); gap: 14px 0; width: 100%; }
 
     .nav-icon-wrap { margin-right: 0; }
+    .rename-form { padding-left: 0; flex-wrap: wrap; }
+    .rename-form input { flex-basis: 100%; }
+    .rename-form .button { flex: 1; }
     .nav-icon-wrap .nav-badge { top: -4px; right: 4px; }
     .friend-list { margin: 0 -16px; }
     .friend-list li { padding: 12px 16px; gap: 12px; }

@@ -96,4 +96,20 @@ class HabitServiceTests {
         assertThat(service.reflectionText(alice, LocalDate.now())).isEqualTo("alice のメモ");
         assertThat(service.reflectionText(bob, LocalDate.now())).isEqualTo("bob のメモ");
     }
+
+    @Test
+    void renameChangesOnlyTheNameOfOwnHabit() {
+        Habit habit = service.create(alice, "読書", Category.SKILL, 15);
+        service.toggle(alice, habit.getId(), LocalDate.now());
+
+        service.rename(alice, habit.getId(), "  読書30分  ");
+
+        Habit renamed = service.activeHabits(alice).getFirst();
+        assertThat(renamed.getName()).isEqualTo("読書30分");
+        assertThat(renamed.getCategory()).isEqualTo(Category.SKILL);
+        assertThat(renamed.getXp()).isEqualTo(15);
+        assertThat(service.totalXp(alice)).isEqualTo(15);
+        assertThatThrownBy(() -> service.rename(bob, habit.getId(), "乗っ取り"))
+                .isInstanceOf(NoSuchElementException.class);
+    }
 }
