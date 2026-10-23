@@ -83,7 +83,7 @@
                 </div>
 
                 <div class="friend-actions">
-                    <form th:action="@{/friends/{id}/cheer(id=${row.user.id})}" method="post">
+                    <form th:action="@{/friends/{id}/cheer(id=${row.user.id})}" method="post" data-instant="cheer">
                         <button type="submit" class="cheer" th:classappend="${row.cheered} ? 'on'"
                                 th:aria-label="${row.cheered} ? '応援を取り消す' : '応援する'"
                                 th:title="${row.cheered} ? '応援を取り消す' : '応援する'">
@@ -156,31 +156,5 @@
         </div>
     </section>
 </main>
-
-<script>
-    (() => {
-        const input = document.getElementById('invite-url');
-        const copy = document.getElementById('copy-invite');
-        const share = document.getElementById('share-invite');
-        copy.addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(input.value);
-            } catch {
-                input.select();
-                document.execCommand('copy');
-            }
-            copy.querySelector('span').textContent = 'コピーしました';
-            setTimeout(() => copy.querySelector('span').textContent = 'コピー', 2000);
-        });
-        if (navigator.share) {
-            share.hidden = false;
-            share.addEventListener('click', () => navigator.share({
-                title: 'MyReset',
-                text: 'MyReset で一緒に習慣を続けよう！',
-                url: input.value
-            }).catch(() => {}));
-        }
-    })();
-</script>
 </body>
 </html>

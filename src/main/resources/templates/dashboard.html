@@ -58,7 +58,7 @@
 
         <ul class="habit-list">
             <li th:each="row : ${rows}" th:classappend="${row.doneToday} ? 'done'">
-                <form th:action="@{/habits/{id}/toggle(id=${row.habit.id})}" method="post">
+                <form th:action="@{/habits/{id}/toggle(id=${row.habit.id})}" method="post" data-instant="check">
                     <button type="submit" class="check" th:aria-label="${row.doneToday} ? 'チェックを外す' : '達成にする'">
                         <svg th:replace="~{icons :: icon('check')}"></svg>
                     </button>
