@@ -22,7 +22,8 @@ public class SecurityConfig {
                                             @Value("${app.remember-me-key}") String rememberMeKey) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/register", "/css/**", "/js/**", "/error").permitAll()
+                        .requestMatchers("/login", "/register", "/css/**", "/js/**", "/icons/**",
+                                "/favicon.ico", "/manifest*.json", "/error").permitAll()
                         .requestMatchers("/admin/**", "/h2-console/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .formLogin(form -> form

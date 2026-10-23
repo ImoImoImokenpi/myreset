@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title th:text="${title} + ' | MyReset'">MyReset</title>
+    <link rel="icon" th:href="@{/icons/icon.svg}" type="image/svg+xml">
+    <link rel="icon" th:href="@{/icons/favicon-32.png}" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" th:href="@{/icons/apple-touch-icon.png}">
+    <link rel="manifest" th:href="@{/manifest.json}">
+    <meta name="apple-mobile-web-app-title" content="MyReset">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="stylesheet" th:href="@{/css/app.css}">
     <script th:src="@{/js/app.js}" defer></script>
     <!-- ユーザーが選んだメインカラー（ThemeColor で #rrggbb 形式だけを許可している） -->
