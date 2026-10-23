@@ -14,11 +14,8 @@ services:
       - key: REMEMBER_ME_KEY
         generateValue: true
       # 以下は作成時に Render の画面で入力する
+      # Neon の接続文字列（postgresql://ユーザー:パスワード@ホスト/DB名?sslmode=require）をそのまま貼る
       - key: DATABASE_URL
-        sync: false
-      - key: DATABASE_USERNAME
-        sync: false
-      - key: DATABASE_PASSWORD
         sync: false
       - key: ADMIN_USERNAME
         sync: false
