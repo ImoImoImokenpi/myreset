@@ -78,25 +78,27 @@
         </p>
 
         <ul class="team-list">
-            <li th:each="t : ${teams}" th:classappend="${t.cleared} ? 'cleared'">
+            <li th:each="t : ${teams}" th:classappend="${t.cleared} ? 'cleared'"
+                th:data-team-habit="${t.habit.id}" th:data-team-size="${t.members.size()}">
                 <div class="team-head">
                     <p class="item-title">
                         <span th:text="${t.habit.name}">ランニング</span>
-                        <span class="badge clear-badge" th:if="${t.cleared}">クリア！</span>
+                        <span class="badge clear-badge" th:hidden="${!t.cleared}">クリア！</span>
                     </p>
                     <p class="habit-meta">
-                        <span class="meta-item"
+                        <span class="meta-item team-progress"
                               th:text="${t.scheduledToday} ? |今日 ${t.done()} / ${t.members.size()}人 達成| : '今日はお休み'">今日 1 / 2人 達成</span>
                         <span class="meta-item" th:text="|${t.habit.scheduleLabel} ・ クリアで +${t.bonus()} XP|"></span>
-                        <span class="meta-item streak" th:if="${t.streak > 0}">
+                        <span class="meta-item streak team-streak" th:hidden="${t.streak == 0}">
                             <svg th:replace="~{icons :: icon('flame')}"></svg>
                             <span th:text="|みんなで${t.streak}日|"></span>
                         </span>
                     </p>
                 </div>
                 <div class="chips">
-                    <span class="chip" th:each="m : ${t.members}" th:classappend="${m.doneToday} ? 'on'">
-                        <th:block th:if="${m.doneToday}"><svg th:replace="~{icons :: icon('check')}"></svg></th:block>
+                    <span class="chip member" th:each="m : ${t.members}" th:classappend="${m.doneToday} ? 'on'"
+                          th:data-member="${m.user.id}">
+                        <svg th:replace="~{icons :: icon('check')}"></svg>
                         <span th:text="${m.me} ? 'あなた' : ${m.user.username}">bob</span>
                     </span>
                     <span class="chip invited" th:each="i : ${t.invited}">

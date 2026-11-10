@@ -15,6 +15,9 @@ public interface HabitRepository extends JpaRepository<Habit, Long> {
 
     Optional<Habit> findByIdAndOwner(Long id, AppUser owner);
 
+    /** 一覧から外した習慣も含めた、すべての習慣（振り返りの絞り込み用）。 */
+    List<Habit> findByOwnerOrderByCategoryAscIdAsc(AppUser owner);
+
     long countByOwnerAndActiveTrue(AppUser owner);
 
     /** チームに参加中の人の習慣（持ち主も一緒に読み込む）。参加した順。 */

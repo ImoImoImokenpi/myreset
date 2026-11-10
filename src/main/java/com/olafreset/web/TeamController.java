@@ -4,12 +4,16 @@ import com.olafreset.domain.AppUser;
 import com.olafreset.domain.Habit;
 import com.olafreset.service.TeamService;
 import com.olafreset.service.TeamService.TeamException;
+import com.olafreset.service.TeamService.TeamStatus;
 import java.time.LocalDate;
+import java.util.Map;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /** フレンドと一緒にやる習慣の招待・参加。画面はフレンドページにある。 */
@@ -20,6 +24,13 @@ public class TeamController {
 
     public TeamController(TeamService teams) {
         this.teams = teams;
+    }
+
+    /** 画面を開いている間、フレンドの達成を反映するために定期的に呼ばれる（キーは自分の習慣の ID）。 */
+    @GetMapping("/api/teams/status")
+    @ResponseBody
+    Map<Long, TeamStatus> status(@ModelAttribute(name = "currentUser", binding = false) AppUser me) {
+        return teams.statusByHabit(me, LocalDate.now());
     }
 
     @PostMapping("/teams/invite")

@@ -90,6 +90,7 @@
                         </span>
                         <th:block th:with="ts=${teamStatus.get(row.habit.id)}">
                             <a class="meta-item team-status" th:if="${ts != null}" th:href="@{/friends}"
+                               th:data-team-habit="${row.habit.id}"
                                th:classappend="${ts.cleared} ? 'cleared'"
                                th:title="${ts.cleared} ? |全員達成！ボーナス +${ts.bonus} XP| : |全員達成でボーナス +${ts.bonus} XP|">
                                 <svg th:replace="~{icons :: icon('users')}"></svg>

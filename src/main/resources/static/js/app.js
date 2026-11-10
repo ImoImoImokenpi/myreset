@@ -158,6 +158,86 @@
     showShareButton();
     new MutationObserver(showShareButton).observe(document.body, { childList: true });
 
+    // ---- みんなでやる習慣：フレンドの達成を自動で反映する ----
+    // 画面を開いている間、チームの状況だけを定期的に取りに行き、該当する部分を書き換える。
+    // ページ全体は読み込み直さないので、入力中のメモなどは消えない。
+
+    const TEAM_POLL_MS = 15000;
+    let teamPolling = false;
+
+    function updateDashboardTeam(el, s) {
+        el.classList.toggle('cleared', s.cleared);
+        el.title = s.cleared ? `全員達成！ボーナス +${s.bonus} XP` : `全員達成でボーナス +${s.bonus} XP`;
+        el.querySelector('span').textContent = s.cleared ? `クリア！ +${s.bonus} XP` : `${s.done} / ${s.total}人`;
+    }
+
+    /** @return 参加者が増減していて、書き換えでは追いつけないとき false */
+    function updateTeamRow(li, s) {
+        if (Number(li.dataset.teamSize) !== s.total) {
+            return false;
+        }
+        li.classList.toggle('cleared', s.cleared);
+        li.querySelector('.clear-badge').hidden = !s.cleared;
+        li.querySelector('.team-progress').textContent =
+            s.scheduledToday ? `今日 ${s.done} / ${s.total}人 達成` : '今日はお休み';
+        const streak = li.querySelector('.team-streak');
+        streak.hidden = s.streak === 0;
+        streak.querySelector('span').textContent = `みんなで${s.streak}日`;
+        for (const m of s.members) {
+            li.querySelector(`.chip[data-member="${m.userId}"]`)?.classList.toggle('on', m.done);
+        }
+        return true;
+    }
+
+    async function refreshTeams() {
+        const targets = document.querySelectorAll('[data-team-habit]');
+        if (teamPolling || document.hidden || targets.length === 0) {
+            return;
+        }
+        teamPolling = true;
+        // 問い合わせ中に自分がチェックを押したら、古い結果で上書きしないよう捨てる
+        const submittedBefore = latest;
+        try {
+            const response = await fetch('/api/teams/status', {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+            // ログイン切れのときはログイン画面（HTML）が返るので、何もしない
+            if (!response.ok || !(response.headers.get('content-type') || '').includes('json')) {
+                return;
+            }
+            const status = await response.json();
+            if (latest !== submittedBefore) {
+                return;
+            }
+            let stale = false;
+            document.querySelectorAll('[data-team-habit]').forEach(el => {
+                const s = status[el.dataset.teamHabit];
+                if (!s) {
+                    return;
+                }
+                if (el.matches('li')) {
+                    stale = !updateTeamRow(el, s) || stale;
+                } else {
+                    updateDashboardTeam(el, s);
+                }
+            });
+            // 誰かが参加・脱退したときは、入力中でなければ画面ごと読み込み直す
+            const typing = document.activeElement?.matches('input, textarea, select');
+            if (stale && !typing) {
+                location.reload();
+            }
+        } catch {
+            // 通信できないときは次の回に任せる
+        } finally {
+            teamPolling = false;
+        }
+    }
+
+    setInterval(refreshTeams, TEAM_POLL_MS);
+    // 別のアプリから戻ってきたときは、すぐに最新にする
+    document.addEventListener('visibilitychange', refreshTeams);
+
     // ---- リマインダー通知 ----
 
     if ('serviceWorker' in navigator) {

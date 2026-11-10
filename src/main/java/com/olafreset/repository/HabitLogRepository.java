@@ -19,6 +19,14 @@ public interface HabitLogRepository extends JpaRepository<HabitLog, Long> {
 
     List<HabitLog> findByHabitOrderByDateDesc(Habit habit);
 
+    /** 期間内の記録（一覧から外した習慣も含む。習慣も一緒に読み込む）。 */
+    @Query("""
+            select l from HabitLog l join fetch l.habit h
+            where h.owner = :owner and l.date between :from and :to
+            order by h.category, h.id
+            """)
+    List<HabitLog> findWithHabitByOwnerAndDateBetween(AppUser owner, LocalDate from, LocalDate to);
+
     /** 達成した記録だけ（習慣も一緒に読み込む）。連続日数・統計・カレンダーに使う。 */
     @Query("select l from HabitLog l join fetch l.habit h where h.owner = :owner and l.completed = true")
     List<HabitLog> findCompletedByOwner(AppUser owner);

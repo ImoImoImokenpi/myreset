@@ -55,8 +55,16 @@ public class TeamService {
         }
     }
 
-    /** 「今日」の画面に出す、チームの習慣の今日の状況。 */
-    public record TeamStatus(int done, int total, boolean cleared, int bonus) {
+    /** 1人分の、今日達成したかどうか（画面の自動更新用）。 */
+    public record MemberStatus(long userId, boolean done) {
+    }
+
+    /**
+     * チームの習慣の今日の状況。「今日」の画面と、画面の自動更新（/api/teams/status）に使う。
+     * total は参加人数、streak はみんなでクリアした連続日数。
+     */
+    public record TeamStatus(int done, int total, boolean cleared, int bonus, boolean scheduledToday, int streak,
+                             List<MemberStatus> members) {
     }
 
     private final HabitRepository habits;
@@ -176,10 +184,14 @@ public class TeamService {
             }
             List<Habit> memberHabits = habits.findActiveByTeam(habit.getTeam());
             Set<Long> doneIds = completedHabitIds(habit.getTeam(), today);
-            int done = (int) memberHabits.stream().filter(h -> doneIds.contains(h.getId())).count();
-            boolean cleared = logs.findByHabitAndDate(habit, today).map(l -> l.getBonusXp() > 0).orElse(false);
-            result.put(habit.getId(), new TeamStatus(done, memberHabits.size(), cleared,
-                    HabitLog.teamBonus(habit.getXp())));
+            List<MemberStatus> members = memberHabits.stream()
+                    .map(h -> new MemberStatus(h.getOwner().getId(), doneIds.contains(h.getId())))
+                    .toList();
+            int done = (int) members.stream().filter(MemberStatus::done).count();
+            Set<LocalDate> clearedDates = clearedDates(habit);
+            result.put(habit.getId(), new TeamStatus(done, memberHabits.size(), clearedDates.contains(today),
+                    HabitLog.teamBonus(habit.getXp()), habit.isScheduledOn(today),
+                    Streaks.current(habit, clearedDates, today), members));
         }
         return result;
     }

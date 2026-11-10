@@ -102,6 +102,26 @@ class TeamServiceTests {
     }
 
     @Test
+    void statusShowsEachMembersProgressForLiveUpdates() {
+        Habit run = habits.create(alice, "ランニング", Category.BODY, 10);
+        Habit bobs = join(run, bob);
+        habits.toggle(bob, bobs.getId(), today);
+
+        TeamService.TeamStatus status = teams.statusByHabit(alice, today).get(run.getId());
+        assertThat(status.done()).isEqualTo(1);
+        assertThat(status.total()).isEqualTo(2);
+        assertThat(status.cleared()).isFalse();
+        assertThat(status.scheduledToday()).isTrue();
+        assertThat(status.members()).extracting(m -> m.userId() + ":" + m.done())
+                .containsExactly(alice.getId() + ":false", bob.getId() + ":true");
+
+        habits.toggle(alice, run.getId(), today);
+        status = teams.statusByHabit(alice, today).get(run.getId());
+        assertThat(status.cleared()).isTrue();
+        assertThat(status.streak()).isEqualTo(1);
+    }
+
+    @Test
     void quantityHabitClearsOnlyWhenEveryoneReachesTheTarget() {
         Habit water = habits.create(alice, "水を飲む", Category.BODY, 20, Set.of(DayOfWeek.values()), 2, 1, "杯");
         Habit bobs = join(water, bob);

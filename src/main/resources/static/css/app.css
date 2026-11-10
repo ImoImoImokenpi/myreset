@@ -1118,6 +1118,74 @@ li.complete .friend-ring::after {
 .outgoing .item-list { margin: 0; }
 .outgoing .item-list li { padding-left: 0; padding-right: 0; }
 
+/* ---------- 記録ページのタブ・振り返り ---------- */
+
+.tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.tab {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 9px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+}
+
+.tab.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+}
+
+.journal-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 12px;
+}
+
+.journal-filter .field { flex: 1 1 180px; }
+.journal-notes-only { height: 44px; align-items: center; }
+
+.journal {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.journal li {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+}
+
+.journal li:first-child { border-top: 0; padding-top: 0; }
+.journal .chips { margin-top: 0; }
+
+.journal-date {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-weight: 700;
+}
+
+.journal-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.7;
+}
+
 /* ---------- みんなでやる習慣 ---------- */
 
 select {
@@ -1156,6 +1224,10 @@ select:focus {
 .team-list li:first-child { border-top: 0; padding-top: 0; }
 .team-list .chips { margin-top: 0; }
 .team-list .habit-meta { flex-wrap: wrap; }
+
+/* 自動更新で出し入れするので、要素は常に置いておき hidden で隠す */
+.team-list [hidden] { display: none; }
+.chip.member:not(.on) .icon { display: none; }
 
 .chip.invited {
     background: transparent;
