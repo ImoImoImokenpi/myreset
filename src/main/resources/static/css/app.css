@@ -1118,6 +1118,85 @@ li.complete .friend-ring::after {
 .outgoing .item-list { margin: 0; }
 .outgoing .item-list li { padding-left: 0; padding-right: 0; }
 
+/* ---------- カレンダーの日付選択・習慣の絞り込み ---------- */
+
+.month-nav { display: flex; align-items: center; gap: 4px; }
+
+.filter-button { color: var(--text); }
+.filter-button .icon { width: 18px; height: 18px; }
+
+.filter-button.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.filter-button.active .icon { fill: currentColor; }
+
+.menu[open] .menu-list {
+    position: absolute;
+    right: 0;
+    top: 42px;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+    max-width: min(280px, calc(100vw - 32px));
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+.menu-list .menu-item {
+    overflow: hidden;
+    color: var(--text);
+    text-decoration: none;
+    text-overflow: ellipsis;
+}
+
+.menu-list .menu-item.selected { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+
+.menu-label {
+    padding: 8px 12px 2px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.filter-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+a.calendar-day {
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+a.calendar-day:active { transform: scale(0.92); }
+
+.calendar-day.selected { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+.calendar-day.today:not(.selected) { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--muted); }
+
+.day-detail .panel-head { margin-bottom: 8px; }
+.day-detail .chips { margin-top: 6px; }
+.day-note-label { margin-top: 16px; }
+
+.chip.focus { box-shadow: inset 0 0 0 2px var(--accent); }
+
 /* ---------- 記録ページのタブ・振り返り ---------- */
 
 .tabs {

@@ -52,6 +52,9 @@ public class Habit {
     @Column(nullable = false)
     private LocalDate createdAt;
 
+    /** 一覧から外した日。外す前の習慣と、この列を入れる前に外した習慣では null。 */
+    private LocalDate archivedOn;
+
     /** 実施する曜日（月曜=1ビット目 … 日曜=7ビット目）。127 は毎日。 */
     @ColumnDefault("127")
     @Column(nullable = false)
@@ -193,6 +196,11 @@ public class Habit {
 
     public void archive() {
         this.active = false;
+        this.archivedOn = LocalDate.now();
+    }
+
+    public LocalDate getArchivedOn() {
+        return archivedOn;
     }
 
     public LocalDate getCreatedAt() {

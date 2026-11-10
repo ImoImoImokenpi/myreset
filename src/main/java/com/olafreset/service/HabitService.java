@@ -253,6 +253,11 @@ public class HabitService {
         }
     }
 
+    /** 自分の習慣（一覧から外したものも含む）。他のユーザーの習慣は見つからない扱い。 */
+    public Habit find(AppUser user, long habitId) {
+        return ownHabit(user, habitId);
+    }
+
     /** 他のユーザーの習慣は存在しないものとして扱う。 */
     private Habit ownHabit(AppUser user, long habitId) {
         return habits.findByIdAndOwner(habitId, user).orElseThrow();

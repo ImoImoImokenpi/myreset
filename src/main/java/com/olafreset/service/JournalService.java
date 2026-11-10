@@ -137,6 +137,15 @@ public class JournalService {
         return new Journal(entries, habit == null ? null : summary(habit, periodLogs));
     }
 
+    /** カレンダーで選んだ1日分（その日の記録と振り返りメモ）。 */
+    public Entry day(AppUser user, LocalDate date) {
+        String note = reflections.findByOwnerAndDate(user, date).map(Reflection::getText).orElse(null);
+        List<Mark> dayMarks = logs.findWithHabitByOwnerAndDateBetween(user, date, date).stream()
+                .map(JournalService::mark)
+                .toList();
+        return new Entry(date, note, dayMarks);
+    }
+
     private static HabitSummary summary(Habit habit, List<HabitLog> habitLogs) {
         int completed = (int) habitLogs.stream().filter(HabitLog::isCompleted).count();
         long total = habitLogs.stream().mapToLong(HabitLog::getAmount).sum();

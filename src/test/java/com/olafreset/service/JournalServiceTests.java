@@ -124,6 +124,23 @@ class JournalServiceTests {
     }
 
     @Test
+    void dayShowsThatDaysRecordsAndNote() {
+        LocalDate d = today.minusDays(2);
+        habits.toggle(alice, run.getId(), d);
+        habits.addAmount(alice, water.getId(), d, 3);
+        habits.saveReflection(alice, d, "雨だった");
+        habits.toggle(alice, run.getId(), today);
+
+        Entry entry = journal.day(alice, d);
+
+        assertThat(entry.reflection()).isEqualTo("雨だった");
+        assertThat(entry.marks()).extracting(m -> m.name() + ":" + m.completed())
+                .containsExactly("ランニング:true", "水:false");
+        assertThat(journal.day(alice, today.minusDays(1)).marks()).isEmpty();
+        assertThat(journal.day(alice, today.minusDays(1)).hasReflection()).isFalse();
+    }
+
+    @Test
     void otherUsersHabitIsNotFound() {
         AppUser bob = users.register("bob", "password2");
         Habit bobs = habits.create(bob, "秘密", Category.MIND, 10);

@@ -15,37 +15,101 @@
         <a class="tab" th:href="@{/stats/notes}">振り返り</a>
     </nav>
 
-    <!-- 月のカレンダー -->
+    <!-- 月のカレンダー。日付をタップすると下にその日の記録とメモが出る。右上で習慣を絞り込める -->
     <section class="panel">
         <div class="panel-head month-head">
-            <a class="icon-button" th:href="@{/stats(month=${prevMonth})}" aria-label="前の月">‹</a>
-            <h2 th:text="${#temporals.format(calendar.month.atDay(1), 'yyyy年M月')}">2026年10月</h2>
-            <a class="icon-button" th:if="${nextMonth}" th:href="@{/stats(month=${nextMonth})}" aria-label="次の月">›</a>
-            <span class="icon-button placeholder" th:unless="${nextMonth}"></span>
+            <div class="month-nav">
+                <a class="icon-button" data-swap th:href="@{/stats(month=${prevMonth}, habit=${filterId})}" aria-label="前の月">‹</a>
+                <h2 th:text="${#temporals.format(calendar.month.atDay(1), 'yyyy年M月')}">2026年10月</h2>
+                <a class="icon-button" data-swap th:if="${nextMonth}" th:href="@{/stats(month=${nextMonth}, habit=${filterId})}" aria-label="次の月">›</a>
+                <span class="icon-button placeholder" th:unless="${nextMonth}"></span>
+            </div>
+            <details class="menu filter-menu">
+                <summary class="icon-button filter-button" th:classappend="${filterHabit != null} ? 'active'"
+                         aria-label="習慣で絞り込む" title="習慣で絞り込む">
+                    <svg th:replace="~{icons :: icon('filter')}"></svg>
+                </summary>
+                <div class="menu-list">
+                    <a class="menu-item" data-swap th:classappend="${filterHabit == null} ? 'selected'"
+                       th:href="@{/stats(month=${calendar.month}, day=${selectedDay})}">すべての習慣</a>
+                    <p class="menu-label" th:unless="${activeHabits.isEmpty()}">登録中</p>
+                    <a class="menu-item" data-swap th:each="h : ${activeHabits}" th:text="${h.name}"
+                       th:classappend="${h.id == filterId} ? 'selected'"
+                       th:href="@{/stats(month=${calendar.month}, day=${selectedDay}, habit=${h.id})}">読書</a>
+                    <p class="menu-label" th:unless="${archivedHabits.isEmpty()}">外した習慣</p>
+                    <a class="menu-item" data-swap th:each="h : ${archivedHabits}" th:text="${h.name}"
+                       th:classappend="${h.id == filterId} ? 'selected'"
+                       th:href="@{/stats(month=${calendar.month}, day=${selectedDay}, habit=${h.id})}">筋トレ</a>
+                </div>
+            </details>
         </div>
+
+        <p class="filter-note" th:if="${filterHabit}">
+            <span th:text="|「${filterHabit.name}」を達成した日を表示中|">「読書」を達成した日を表示中</span>
+            <a class="link-button muted-link" data-swap th:href="@{/stats(month=${calendar.month}, day=${selectedDay})}">解除</a>
+        </p>
 
         <div class="calendar">
             <div class="calendar-row calendar-labels">
                 <span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span>
             </div>
             <div class="calendar-row" th:each="week : ${calendar.weeks}">
-                <span th:each="day : ${week}" class="calendar-day"
-                      th:classappend="|lv${day.level()} ${day.today ? 'today' : ''} ${day.date == null ? 'blank' : ''}|"
-                      th:title="${day.date != null and day.total > 0 and !day.future} ? |${day.done} / ${day.total} 達成| : ''">
-                    <span th:if="${day.date}" th:text="${day.date.dayOfMonth}">1</span>
-                </span>
+                <th:block th:each="day : ${week}">
+                    <a th:if="${day.date != null and !day.future}" class="calendar-day" data-swap="day"
+                       th:href="@{/stats(month=${calendar.month}, day=${day.date}, habit=${filterId})}"
+                       th:classappend="|lv${day.level()} ${day.today ? 'today' : ''} ${day.date == selectedDay ? 'selected' : ''}|"
+                       th:aria-current="${day.date == selectedDay} ? 'date'"
+                       th:title="${day.total == 0} ? '' : (${filterHabit != null} ? (${day.done > 0} ? '達成' : '未達成') : |${day.done} / ${day.total} 達成|)">
+                        <span th:text="${day.date.dayOfMonth}">1</span>
+                    </a>
+                    <span th:unless="${day.date != null and !day.future}" class="calendar-day"
+                          th:classappend="|lv${day.level()} ${day.date == null ? 'blank' : ''}|">
+                        <span th:if="${day.date}" th:text="${day.date.dayOfMonth}">1</span>
+                    </span>
+                </th:block>
             </div>
         </div>
 
-        <div class="calendar-legend">
+        <div class="calendar-legend" th:unless="${filterHabit}">
             <span>少</span><i class="lv0"></i><i class="lv1"></i><i class="lv2"></i><i class="lv3"></i><i class="lv4"></i><span>多</span>
         </div>
+        <div class="calendar-legend" th:if="${filterHabit}">
+            <i class="lv4"></i><span>達成</span><i class="lv0"></i><span>未達成</span>
+        </div>
 
-        <dl class="summary">
+        <dl class="summary" th:unless="${filterHabit}">
             <div><dt>達成率</dt><dd><span th:text="${calendar.rate}">0</span><small>%</small></dd></div>
             <div><dt>全部達成した日</dt><dd><span th:text="${calendar.perfectDays}">0</span><small>日</small></dd></div>
             <div><dt>達成した回数</dt><dd><span th:text="${calendar.completions}">0</span><small>回</small></dd></div>
         </dl>
+        <dl class="summary" th:if="${filterHabit}">
+            <div><dt>達成率</dt><dd><span th:text="${calendar.rate}">0</span><small>%</small></dd></div>
+            <div><dt>達成した日</dt><dd><span th:text="${calendar.completions}">0</span><small>日</small></dd></div>
+            <div><dt>予定していた日</dt><dd><span th:text="${calendar.scheduledDays}">0</span><small>日</small></dd></div>
+        </dl>
+    </section>
+
+    <!-- タップした日の記録とメモ -->
+    <section class="panel day-detail" id="day-detail">
+        <th:block th:if="${dayEntry}">
+            <div class="panel-head">
+                <h2 th:text="${#temporals.format(dayEntry.date, 'M月d日（E）')}">11月10日（月）</h2>
+                <span class="muted small" th:if="${selectedDay == #temporals.createToday()}">今日</span>
+            </div>
+            <p class="field-label">達成したこと</p>
+            <div class="chips" th:unless="${dayEntry.marks.isEmpty()}">
+                <span class="chip" th:each="m : ${dayEntry.marks}"
+                      th:classappend="|${m.completed ? 'on' : ''} ${m.habitId == filterId ? 'focus' : ''}|">
+                    <th:block th:if="${m.completed}"><svg th:replace="~{icons :: icon('check')}"></svg></th:block>
+                    <span th:text="${m.quantity} ? |${m.name} ${m.amountLabel()}| : ${m.name}">読書</span>
+                </span>
+            </div>
+            <p class="muted small" th:if="${dayEntry.marks.isEmpty()}">この日の記録はありません</p>
+            <p class="field-label day-note-label">メモ</p>
+            <p class="journal-text" th:if="${dayEntry.hasReflection()}" th:text="${dayEntry.reflection}">よく眠れた</p>
+            <p class="muted small" th:unless="${dayEntry.hasReflection()}">この日のメモはありません</p>
+        </th:block>
+        <p class="muted small" th:unless="${dayEntry}">カレンダーの日付をタップすると、その日に達成したこととメモが表示されます。</p>
     </section>
 
     <!-- 習慣ごとの統計 -->

@@ -88,6 +88,53 @@
         }
     });
 
+    // data-swap を付けたリンク（カレンダーの日付・月の移動・習慣の絞り込み）は、
+    // ページを読み込み直さずに本文だけを差し替える。URL は書き換えるので、再読み込みしても同じ表示になる。
+    document.addEventListener('click', async (event) => {
+        const link = event.target.closest('a[data-swap]');
+        if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+            return;
+        }
+        event.preventDefault();
+        // 押した日をすぐに選択中の見た目にする
+        if (link.dataset.swap === 'day') {
+            document.querySelectorAll('.calendar-day.selected').forEach(d => d.classList.remove('selected'));
+            link.classList.add('selected');
+        }
+        const id = ++latest;
+        try {
+            const response = await fetch(link.href, { headers: { 'Accept': 'text/html' }, credentials: 'same-origin' });
+            // ログイン切れなどで別のページに転送されたときは、普通に移動する
+            if (!response.ok || response.redirected) {
+                throw new Error(String(response.status));
+            }
+            const html = await response.text();
+            if (id !== latest) {
+                return;
+            }
+            if (!swapPage(html)) {
+                throw new Error('no main');
+            }
+            history.replaceState(null, '', link.href);
+        } catch {
+            location.href = link.href;
+            return;
+        }
+        // 下に出た「その日の記録」が画面外なら見える位置までスクロールする
+        if (link.dataset.swap === 'day') {
+            document.getElementById('day-detail')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+        }
+    });
+
+    // 開いているメニュー（絞り込みなど）は、外側をタップしたら閉じる
+    document.addEventListener('click', (event) => {
+        document.querySelectorAll('details.menu[open]').forEach(menu => {
+            if (!menu.contains(event.target)) {
+                menu.open = false;
+            }
+        });
+    });
+
     // 習慣の名前変更フォームの開閉
     document.addEventListener('click', (event) => {
         const toggle = event.target.closest('[data-rename-toggle]');

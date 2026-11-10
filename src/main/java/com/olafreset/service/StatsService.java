@@ -6,6 +6,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,8 +56,20 @@ public class StatsService {
     }
 
     public Calendar calendar(AppUser user, YearMonth month, LocalDate today) {
-        List<Habit> active = habits.activeHabits(user);
+        return calendar(user, month, today, null);
+    }
+
+    /**
+     * 月のカレンダー。only を指定すると、その習慣だけで数える（一覧から外した習慣も可）。
+     * その場合、色が付くのはその習慣を達成した日で、外した日より後は数えない。
+     */
+    public Calendar calendar(AppUser user, YearMonth month, LocalDate today, Habit only) {
+        List<Habit> active = only == null ? habits.activeHabits(user) : List.of(only);
         Map<Long, Set<LocalDate>> done = habits.completedDates(user);
+        Map<Long, LocalDate> lastDay = new HashMap<>();
+        for (Habit h : active) {
+            lastDay.put(h.getId(), lastTrackedDay(h, done.getOrDefault(h.getId(), Set.of()), today));
+        }
 
         List<List<CalendarDay>> weeks = new ArrayList<>();
         List<CalendarDay> week = new ArrayList<>();
@@ -75,7 +88,8 @@ public class StatsService {
             int total = 0;
             int count = 0;
             for (Habit h : active) {
-                if (h.isScheduledOn(date) && !h.getCreatedAt().isAfter(date)) {
+                if (h.isScheduledOn(date) && !h.getCreatedAt().isAfter(date)
+                        && !date.isAfter(lastDay.get(h.getId()))) {
                     total++;
                     if (done.getOrDefault(h.getId(), Set.of()).contains(date)) {
                         count++;
@@ -107,6 +121,20 @@ public class StatsService {
         }
         int rate = totalSum == 0 ? 0 : doneSum * 100 / totalSum;
         return new Calendar(month, weeks, completions, perfect, scheduledDays, rate);
+    }
+
+    /**
+     * 習慣を数える最後の日。登録中なら今日、外した習慣なら外した日。
+     * 外した日を記録する前に外した習慣は、最後に達成した日（なければ作った日）とする。
+     */
+    static LocalDate lastTrackedDay(Habit h, Set<LocalDate> doneDates, LocalDate today) {
+        if (h.isActive()) {
+            return today;
+        }
+        if (h.getArchivedOn() != null) {
+            return h.getArchivedOn();
+        }
+        return doneDates.stream().max(LocalDate::compareTo).orElse(h.getCreatedAt());
     }
 
     public List<HabitStats> habitStats(AppUser user, LocalDate today) {

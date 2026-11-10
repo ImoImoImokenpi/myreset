@@ -74,4 +74,57 @@ class StatsServiceTests {
         assertThat(thursday.done()).isEqualTo(1);
         assertThat(thursday.scheduled()).isEqualTo(4);
     }
+
+    @Test
+    void calendarCanBeFilteredToOneHabitIncludingArchivedOnes() {
+        AppUser user = users.register("filter", "password1");
+        LocalDate today = LocalDate.of(2026, 10, 22);
+        Habit run = habits.create(user, "ランニング", Category.BODY, 10);
+        Habit read = habits.create(user, "読書", Category.SKILL, 10);
+        entityManager.flush();
+        jdbc.update("update habit set created_at = ? where id in (?, ?)", LocalDate.of(2026, 10, 1),
+                run.getId(), read.getId());
+        entityManager.clear();
+        habits.toggle(user, run.getId(), LocalDate.of(2026, 10, 5));
+        habits.toggle(user, run.getId(), LocalDate.of(2026, 10, 6));
+        habits.toggle(user, read.getId(), LocalDate.of(2026, 10, 6));
+        habits.toggle(user, read.getId(), LocalDate.of(2026, 10, 9));
+
+        Habit runHabit = habits.find(user, run.getId());
+        var onlyRun = stats.calendar(user, YearMonth.of(2026, 10), today, runHabit);
+        assertThat(day(onlyRun, 5).level()).isEqualTo(4);
+        assertThat(day(onlyRun, 9).level()).isZero();
+        assertThat(onlyRun.completions()).isEqualTo(2);
+        assertThat(onlyRun.scheduledDays()).isEqualTo(22);
+
+        // 外した習慣は、外した日より後を数えない（外した日を記録する前のものは最後に達成した日まで）
+        habits.archive(user, read.getId());
+        entityManager.flush();
+        jdbc.update("update habit set archived_on = null where id = ?", read.getId());
+        entityManager.clear();
+        Habit readHabit = habits.find(user, read.getId());
+        var onlyRead = stats.calendar(user, YearMonth.of(2026, 10), today, readHabit);
+        assertThat(day(onlyRead, 9).level()).isEqualTo(4);
+        assertThat(day(onlyRead, 10).level()).isEqualTo(-1);
+        assertThat(onlyRead.scheduledDays()).isEqualTo(9);
+        assertThat(onlyRead.completions()).isEqualTo(2);
+
+        // 全体のカレンダーには、外した習慣は入らない
+        var all = stats.calendar(user, YearMonth.of(2026, 10), today);
+        assertThat(day(all, 6).total()).isEqualTo(1);
+    }
+
+    @Test
+    void archivingRecordsTheDay() {
+        AppUser user = users.register("archiver", "password1");
+        Habit run = habits.create(user, "ランニング", Category.BODY, 10);
+        habits.archive(user, run.getId());
+        assertThat(habits.find(user, run.getId()).getArchivedOn()).isEqualTo(LocalDate.now());
+    }
+
+    private static CalendarDay day(StatsService.Calendar calendar, int dayOfMonth) {
+        return calendar.weeks().stream().flatMap(List::stream)
+                .filter(d -> d.date() != null && d.date().getDayOfMonth() == dayOfMonth)
+                .findFirst().orElseThrow();
+    }
 }
