@@ -71,7 +71,26 @@ public class Habit {
     @Column(length = 10)
     private String unit;
 
+    /** フレンドと一緒に取り組んでいるときのチーム。1人でやる習慣では null。 */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id")
+    private HabitTeam team;
+
     protected Habit() {
+    }
+
+    /**
+     * チームに参加した人の習慣を、招待した人の習慣と同じ設定で作る。
+     * source は遅延読み込みのプロキシのことがあるので、フィールドではなくゲッターで読む。
+     */
+    public static Habit joinTeam(Habit source, AppUser owner) {
+        Habit habit = new Habit(owner, source.getName(), source.getCategory(), source.getXp());
+        habit.days = source.getDays();
+        habit.target = source.getTarget();
+        habit.step = source.getStep();
+        habit.unit = source.getUnit();
+        habit.team = source.getTeam();
+        return habit;
     }
 
     public static final int ALL_DAYS = 0b1111111;
@@ -194,6 +213,19 @@ public class Habit {
 
     public String getUnit() {
         return unit;
+    }
+
+    public HabitTeam getTeam() {
+        return team;
+    }
+
+    public void setTeam(HabitTeam team) {
+        this.team = team;
+    }
+
+    /** フレンドと一緒に取り組んでいる習慣か。 */
+    public boolean isTeamHabit() {
+        return team != null;
     }
 
     /** 量を記録する習慣か（目標が 2 以上、または単位がある）。 */

@@ -3,6 +3,7 @@ package com.olafreset.repository;
 import com.olafreset.domain.AppUser;
 import com.olafreset.domain.Habit;
 import com.olafreset.domain.HabitLog;
+import com.olafreset.domain.HabitTeam;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -26,9 +27,17 @@ public interface HabitLogRepository extends JpaRepository<HabitLog, Long> {
     @Query("select l from HabitLog l join fetch l.habit h where h.owner = :owner and l.date = :date")
     List<HabitLog> findByOwnerAndDate(AppUser owner, LocalDate date);
 
-    /** もらった XP の合計。量の習慣は進めた分だけ（HabitLog#getEarnedXp と同じ計算）。 */
+    /** チームの全員の、その日の記録。 */
+    @Query("select l from HabitLog l join fetch l.habit h where h.team = :team and l.date = :date")
+    List<HabitLog> findByTeamAndDate(HabitTeam team, LocalDate date);
+
+    /** チームでクリアした日の記録（ボーナスが付いている記録）。 */
+    List<HabitLog> findByHabitAndBonusXpGreaterThan(Habit habit, int bonusXp);
+
+    /** もらった XP の合計。量の習慣は進めた分だけ＋チームのボーナス（HabitLog#getEarnedXp と同じ計算）。 */
     @Query("""
-            select coalesce(sum(l.xp * (case when l.amount < h.target then l.amount else h.target end) / h.target), 0)
+            select coalesce(sum(l.xp * (case when l.amount < h.target then l.amount else h.target end) / h.target
+                                + l.bonusXp), 0)
             from HabitLog l join l.habit h where h.owner = :owner
             """)
     long sumXp(AppUser owner);

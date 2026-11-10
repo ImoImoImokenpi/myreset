@@ -9,6 +9,7 @@ import com.olafreset.repository.HabitLogRepository;
 import com.olafreset.repository.HabitRepository;
 import com.olafreset.repository.PushSubscriptionRepository;
 import com.olafreset.repository.ReflectionRepository;
+import com.olafreset.repository.TeamInviteRepository;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +44,7 @@ public class UserService implements UserDetailsService {
     private final FriendshipRepository friendships;
     private final CheerRepository cheers;
     private final PushSubscriptionRepository pushSubscriptions;
+    private final TeamInviteRepository teamInvites;
     private final PasswordEncoder passwordEncoder;
     private final boolean registrationOpen;
     private final String adminUsername;
@@ -50,7 +52,7 @@ public class UserService implements UserDetailsService {
     public UserService(AppUserRepository users, HabitRepository habits, HabitLogRepository logs,
                        ReflectionRepository reflections, FriendshipRepository friendships,
                        CheerRepository cheers, PushSubscriptionRepository pushSubscriptions,
-                       PasswordEncoder passwordEncoder,
+                       TeamInviteRepository teamInvites, PasswordEncoder passwordEncoder,
                        @Value("${app.registration-open:true}") boolean registrationOpen,
                        @Value("${app.admin-username:}") String adminUsername) {
         this.users = users;
@@ -60,6 +62,7 @@ public class UserService implements UserDetailsService {
         this.friendships = friendships;
         this.cheers = cheers;
         this.pushSubscriptions = pushSubscriptions;
+        this.teamInvites = teamInvites;
         this.passwordEncoder = passwordEncoder;
         this.registrationOpen = registrationOpen;
         this.adminUsername = adminUsername.strip();
@@ -144,6 +147,7 @@ public class UserService implements UserDetailsService {
         pushSubscriptions.deleteByUser(target);
         cheers.deleteInvolving(target);
         friendships.deleteInvolving(target);
+        teamInvites.deleteInvolving(target);
         logs.deleteByOwner(target);
         habits.deleteByOwner(target);
         reflections.deleteByOwner(target);

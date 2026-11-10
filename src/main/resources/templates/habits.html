@@ -86,6 +86,7 @@
                     <p class="item-title">
                         <span th:text="${h.name}"></span>
                         <span class="badge subtle" th:unless="${h.shared}">非公開</span>
+                        <span class="badge" th:if="${h.teamHabit}">みんなで</span>
                     </p>
                     <p class="item-sub">
                         <span th:text="|${h.category.label} ・ ${h.xp} XP ・ ${h.scheduleLabel}|"></span>
@@ -104,7 +105,8 @@
                     </button>
                 </form>
                 <form th:action="@{/habits/{id}/archive(id=${h.id})}" method="post"
-                      onsubmit="return confirm('この習慣を一覧から外しますか？（獲得XPは残ります）');">
+                      th:data-confirm="${h.teamHabit} ? 'この習慣を一覧から外して、チームから抜けますか？（獲得XPは残ります）' : 'この習慣を一覧から外しますか？（獲得XPは残ります）'"
+                      onsubmit="return confirm(this.dataset.confirm);">
                     <button type="submit" class="icon-button danger" aria-label="外す">
                         <svg th:replace="~{icons :: icon('trash')}"></svg>
                     </button>

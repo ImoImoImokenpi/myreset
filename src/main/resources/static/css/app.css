@@ -1118,6 +1118,76 @@ li.complete .friend-ring::after {
 .outgoing .item-list { margin: 0; }
 .outgoing .item-list li { padding-left: 0; padding-right: 0; }
 
+/* ---------- みんなでやる習慣 ---------- */
+
+select {
+    width: 100%;
+    height: 44px;
+    padding: 0 36px 0 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 12px center / 16px no-repeat;
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+    appearance: none;
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-ring);
+}
+
+.team-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.team-list li {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+}
+
+.team-list li:first-child { border-top: 0; padding-top: 0; }
+.team-list .chips { margin-top: 0; }
+.team-list .habit-meta { flex-wrap: wrap; }
+
+.chip.invited {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.clear-badge {
+    background: var(--streak);
+    color: #fff;
+}
+
+.team-invite .button, .team-start .button { flex-shrink: 0; }
+.team-start { margin-top: 20px; }
+.team-start .inline-form { margin-top: 6px; }
+.team-start .muted { margin-top: 8px; }
+
+.team-status {
+    color: var(--muted);
+    text-decoration: none;
+}
+
+.team-status.cleared {
+    color: var(--streak);
+    font-weight: 700;
+}
+
+@media (max-width: 640px) {
+    .team-start .inline-form { flex-wrap: wrap; }
+    .team-start .inline-form .field { flex-basis: calc(50% - 5px); }
+    .team-start .inline-form .button { flex-basis: 100%; }
+}
+
 /* ---------- 習慣の名前変更 ---------- */
 
 .item-list li { flex-wrap: wrap; }

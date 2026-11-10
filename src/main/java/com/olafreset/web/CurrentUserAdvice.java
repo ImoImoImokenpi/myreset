@@ -2,6 +2,7 @@ package com.olafreset.web;
 
 import com.olafreset.domain.AppUser;
 import com.olafreset.service.FriendService;
+import com.olafreset.service.TeamService;
 import com.olafreset.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
@@ -19,10 +20,12 @@ class CurrentUserAdvice {
 
     private final UserService users;
     private final FriendService friends;
+    private final TeamService teams;
 
-    CurrentUserAdvice(UserService users, FriendService friends) {
+    CurrentUserAdvice(UserService users, FriendService friends, TeamService teams) {
         this.users = users;
         this.friends = friends;
+        this.teams = teams;
     }
 
     @ModelAttribute("currentUser")
@@ -30,11 +33,11 @@ class CurrentUserAdvice {
         return lookup(principal, request);
     }
 
-    /** ナビの「フレンド」に出す、届いている申請の数。 */
+    /** ナビの「フレンド」に出す、届いているフレンド申請と「一緒にやろう」の招待の数。 */
     @ModelAttribute("friendRequestCount")
     long friendRequestCount(Principal principal, HttpServletRequest request) {
         AppUser me = lookup(principal, request);
-        return me == null ? 0 : friends.incomingCount(me);
+        return me == null ? 0 : friends.incomingCount(me) + teams.incomingCount(me);
     }
 
     /** 1回のリクエストの中ではユーザーを1度だけ読み込む。 */

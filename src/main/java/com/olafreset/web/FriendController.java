@@ -3,6 +3,8 @@ package com.olafreset.web;
 import com.olafreset.domain.AppUser;
 import com.olafreset.service.FriendService;
 import com.olafreset.service.FriendService.FriendException;
+import com.olafreset.service.HabitService;
+import com.olafreset.service.TeamService;
 import java.time.LocalDate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,14 +21,24 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class FriendController {
 
     private final FriendService friends;
+    private final TeamService teams;
+    private final HabitService habits;
 
-    public FriendController(FriendService friends) {
+    public FriendController(FriendService friends, TeamService teams, HabitService habits) {
         this.friends = friends;
+        this.teams = teams;
+        this.habits = habits;
     }
 
     @GetMapping("/friends")
     String friends(@ModelAttribute(name = "currentUser", binding = false) AppUser me, Model model) {
-        model.addAttribute("board", friends.board(me, LocalDate.now()));
+        LocalDate today = LocalDate.now();
+        model.addAttribute("board", friends.board(me, today));
+        model.addAttribute("teamInvites", teams.incoming(me));
+        model.addAttribute("teams", teams.teams(me, today));
+        // 「一緒にやる」を始められる習慣（まだ1人でやっているもの）とフレンド
+        model.addAttribute("soloHabits", habits.activeHabits(me).stream().filter(h -> !h.isTeamHabit()).toList());
+        model.addAttribute("friendList", friends.friends(me));
         model.addAttribute("incoming", friends.incoming(me));
         model.addAttribute("outgoing", friends.outgoing(me));
         model.addAttribute("inviteUrl", ServletUriComponentsBuilder.fromCurrentContextPath()

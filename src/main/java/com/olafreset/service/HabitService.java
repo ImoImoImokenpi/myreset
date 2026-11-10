@@ -4,6 +4,7 @@ import com.olafreset.domain.AppUser;
 import com.olafreset.domain.Category;
 import com.olafreset.domain.Habit;
 import com.olafreset.domain.HabitLog;
+import com.olafreset.domain.HabitTeam;
 import com.olafreset.domain.Reflection;
 import com.olafreset.repository.HabitLogRepository;
 import com.olafreset.repository.HabitRepository;
@@ -164,14 +165,21 @@ public class HabitService {
     @Transactional
     public Habit rename(AppUser user, long habitId, String name) {
         Habit habit = ownHabit(user, habitId);
+        if (habit.isTeamHabit()) {
+            // チームの習慣は、参加者全員の名前をそろえる
+            habits.findActiveByTeam(habit.getTeam()).forEach(h -> h.rename(name.strip()));
+        }
         habit.rename(name.strip());
         return habit;
     }
 
-    /** 習慣を一覧から外す。獲得済みの XP は残す。 */
+    /** 習慣を一覧から外す。獲得済みの XP は残す。チームの習慣なら、チームから抜ける。 */
     @Transactional
     public void archive(AppUser user, long habitId) {
-        ownHabit(user, habitId).archive();
+        Habit habit = ownHabit(user, habitId);
+        habit.archive();
+        // 抜けた人を除いて、今日のクリアを判定し直す
+        updateTeamClear(habit.getTeam(), LocalDate.now());
     }
 
     /** フレンドに見せるかどうかを切り替える。 */
@@ -197,6 +205,7 @@ public class HabitService {
         } else {
             logs.save(new HabitLog(habit, date, habit.getTarget()));
         }
+        updateTeamClear(habit.getTeam(), date);
     }
 
     /** 量を増減する（「＋」「−」ボタン）。0 になったら記録を消す。 */
@@ -212,7 +221,36 @@ public class HabitService {
         } else {
             logs.save(new HabitLog(habit, date, amount));
         }
+        updateTeamClear(habit.getTeam(), date);
         return amount;
+    }
+
+    /**
+     * その日にチームの参加者全員が達成していればクリアとし、全員の記録にボーナス XP を付ける。
+     * 1人でも未達成ならボーナスを外す。参加者が2人以上で、実施日のときだけクリアになる。
+     */
+    @Transactional
+    void updateTeamClear(HabitTeam team, LocalDate date) {
+        if (team == null) {
+            return;
+        }
+        List<Habit> members = habits.findActiveByTeam(team).stream()
+                .filter(h -> !h.getCreatedAt().isAfter(date))
+                .toList();
+        Map<Long, HabitLog> byHabit = logs.findByTeamAndDate(team, date).stream()
+                .collect(Collectors.toMap(l -> l.getHabit().getId(), l -> l));
+        boolean cleared = members.size() >= 2
+                && members.getFirst().isScheduledOn(date)
+                && members.stream().allMatch(h -> {
+                    HabitLog log = byHabit.get(h.getId());
+                    return log != null && log.isCompleted();
+                });
+        for (Habit h : members) {
+            HabitLog log = byHabit.get(h.getId());
+            if (log != null) {
+                log.setBonusXp(cleared ? HabitLog.teamBonus(h.getXp()) : 0);
+            }
+        }
     }
 
     /** 他のユーザーの習慣は存在しないものとして扱う。 */

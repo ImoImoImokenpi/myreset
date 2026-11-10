@@ -43,6 +43,11 @@ public class HabitLog {
     @Column(nullable = false)
     private boolean completed = true;
 
+    /** チームの全員が達成した日にもらえる追加の XP。クリアしていなければ 0。 */
+    @ColumnDefault("0")
+    @Column(nullable = false)
+    private int bonusXp;
+
     protected HabitLog() {
     }
 
@@ -87,10 +92,23 @@ public class HabitLog {
      * 例：50XP・目標30分で10分なら 50 × 10 ÷ 30 = 16（切り捨て）。目標を超えても満額まで。
      */
     public int getEarnedXp() {
-        return earnedXp(xp, amount, habit.getTarget());
+        return earnedXp(xp, amount, habit.getTarget()) + bonusXp;
     }
 
     public static int earnedXp(int xp, int amount, int target) {
         return xp * Math.min(amount, target) / target;
+    }
+
+    public int getBonusXp() {
+        return bonusXp;
+    }
+
+    public void setBonusXp(int bonusXp) {
+        this.bonusXp = bonusXp;
+    }
+
+    /** チームでクリアしたときのボーナス：習慣の XP の半分（最低 1）。 */
+    public static int teamBonus(int xp) {
+        return Math.max(1, xp / 2);
     }
 }

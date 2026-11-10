@@ -7,6 +7,7 @@ import com.olafreset.domain.Friendship.Status;
 import com.olafreset.repository.AppUserRepository;
 import com.olafreset.repository.CheerRepository;
 import com.olafreset.repository.FriendshipRepository;
+import com.olafreset.repository.TeamInviteRepository;
 import com.olafreset.service.HabitService.HabitRow;
 import java.security.SecureRandom;
 import java.time.LocalDate;
@@ -48,13 +49,15 @@ public class FriendService {
     private final AppUserRepository users;
     private final FriendshipRepository friendships;
     private final CheerRepository cheers;
+    private final TeamInviteRepository teamInvites;
     private final HabitService habits;
 
     public FriendService(AppUserRepository users, FriendshipRepository friendships, CheerRepository cheers,
-                         HabitService habits) {
+                         TeamInviteRepository teamInvites, HabitService habits) {
         this.users = users;
         this.friendships = friendships;
         this.cheers = cheers;
+        this.teamInvites = teamInvites;
         this.habits = habits;
     }
 
@@ -149,6 +152,8 @@ public class FriendService {
         AppUser friend = users.findById(friendUserId).orElseThrow();
         Friendship f = friendships.findBetween(me, friend).orElseThrow();
         cheers.deleteBetween(me, friend);
+        // まだ承認されていない「一緒にやろう」の招待も消す（参加済みのチームはそのまま）
+        teamInvites.deleteBetween(me, friend);
         friendships.deleteById(f.getId());
     }
 

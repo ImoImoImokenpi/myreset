@@ -38,6 +38,110 @@
         </ul>
     </section>
 
+    <!-- 届いている「一緒にやろう」の招待 -->
+    <section class="panel" th:unless="${teamInvites.isEmpty()}">
+        <div class="panel-head">
+            <h2>一緒にやろうの招待</h2>
+            <span class="count" th:text="${teamInvites.size()}">1</span>
+        </div>
+        <ul class="item-list">
+            <li th:each="i : ${teamInvites}">
+                <span class="avatar" th:style="|--avatar: ${i.inviter.themeColor}|"
+                      th:text="${#strings.toUpperCase(#strings.substring(i.inviter.username, 0, 1))}">U</span>
+                <div class="item-main">
+                    <p class="item-title" th:text="${i.habit.name}">ランニング</p>
+                    <p class="item-sub">
+                        <span th:text="|${i.inviter.username} さんから ・ ${i.habit.scheduleLabel}|"></span>
+                        <span th:if="${i.habit.quantity}" th:text="| ・ 目標 ${i.habit.targetLabel}|"></span>
+                    </p>
+                </div>
+                <form th:action="@{/teams/invites/{id}/accept(id=${i.id})}" method="post">
+                    <button type="submit" class="button small">参加</button>
+                </form>
+                <form th:action="@{/teams/invites/{id}/dismiss(id=${i.id})}" method="post">
+                    <button type="submit" class="icon-button" aria-label="断る" title="断る">
+                        <svg th:replace="~{icons :: icon('x')}"></svg>
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </section>
+
+    <!-- みんなでやる習慣 -->
+    <section class="panel">
+        <div class="panel-head">
+            <h2><svg th:replace="~{icons :: icon('users')}"></svg>みんなでやる習慣</h2>
+            <span class="count" th:text="${teams.size()}">0</span>
+        </div>
+        <p class="muted small" th:if="${teams.isEmpty()}">
+            フレンドと同じ習慣に取り組みましょう。その日に全員が達成するとクリアになり、全員にボーナス XP が入ります。
+        </p>
+
+        <ul class="team-list">
+            <li th:each="t : ${teams}" th:classappend="${t.cleared} ? 'cleared'">
+                <div class="team-head">
+                    <p class="item-title">
+                        <span th:text="${t.habit.name}">ランニング</span>
+                        <span class="badge clear-badge" th:if="${t.cleared}">クリア！</span>
+                    </p>
+                    <p class="habit-meta">
+                        <span class="meta-item"
+                              th:text="${t.scheduledToday} ? |今日 ${t.done()} / ${t.members.size()}人 達成| : '今日はお休み'">今日 1 / 2人 達成</span>
+                        <span class="meta-item" th:text="|${t.habit.scheduleLabel} ・ クリアで +${t.bonus()} XP|"></span>
+                        <span class="meta-item streak" th:if="${t.streak > 0}">
+                            <svg th:replace="~{icons :: icon('flame')}"></svg>
+                            <span th:text="|みんなで${t.streak}日|"></span>
+                        </span>
+                    </p>
+                </div>
+                <div class="chips">
+                    <span class="chip" th:each="m : ${t.members}" th:classappend="${m.doneToday} ? 'on'">
+                        <th:block th:if="${m.doneToday}"><svg th:replace="~{icons :: icon('check')}"></svg></th:block>
+                        <span th:text="${m.me} ? 'あなた' : ${m.user.username}">bob</span>
+                    </span>
+                    <span class="chip invited" th:each="i : ${t.invited}">
+                        <span th:text="|${i.invitee.username}（招待中）|">carol（招待中）</span>
+                    </span>
+                </div>
+                <p class="muted small" th:if="${t.members.size() < 2}">フレンドが参加すると、クリアを目指せます。</p>
+                <form class="inline-form team-invite" th:unless="${t.invitable.isEmpty()}"
+                      th:action="@{/teams/invite}" method="post">
+                    <input type="hidden" name="habitId" th:value="${t.habit.id}">
+                    <label class="field">
+                        <span>フレンドを招待</span>
+                        <select name="userId" required>
+                            <option th:each="f : ${t.invitable}" th:value="${f.id}" th:text="${f.username}">carol</option>
+                        </select>
+                    </label>
+                    <button type="submit" class="button ghost">招待</button>
+                </form>
+            </li>
+        </ul>
+
+        <form class="team-start" th:if="${!soloHabits.isEmpty() and !friendList.isEmpty()}"
+              th:action="@{/teams/invite}" method="post">
+            <p class="field-label">フレンドを誘って始める</p>
+            <div class="inline-form">
+                <label class="field">
+                    <span>習慣</span>
+                    <select name="habitId" required>
+                        <option th:each="h : ${soloHabits}" th:value="${h.id}" th:text="${h.name}">読書</option>
+                    </select>
+                </label>
+                <label class="field">
+                    <span>フレンド</span>
+                    <select name="userId" required>
+                        <option th:each="f : ${friendList}" th:value="${f.id}" th:text="${f.username}">bob</option>
+                    </select>
+                </label>
+                <button type="submit" class="button">誘う</button>
+            </div>
+            <p class="muted small">相手が参加すると、同じ曜日・目標の習慣が相手の一覧にも追加されます。</p>
+        </form>
+        <p class="muted small" th:if="${friendList.isEmpty()}">フレンドを追加すると、一緒に取り組めます。</p>
+        <p class="muted small" th:unless="${teams.isEmpty()}">チームから抜けるときは、「習慣」ページでその習慣を外してください。</p>
+    </section>
+
     <!-- 今日のフレンド -->
     <section class="panel">
         <div class="panel-head">

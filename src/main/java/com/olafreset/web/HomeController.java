@@ -7,6 +7,7 @@ import com.olafreset.service.FriendService;
 import com.olafreset.service.HabitService;
 import com.olafreset.service.HabitService.HabitRow;
 import com.olafreset.service.Level;
+import com.olafreset.service.TeamService;
 import jakarta.validation.Valid;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -27,10 +28,12 @@ public class HomeController {
 
     private final HabitService service;
     private final FriendService friends;
+    private final TeamService teams;
 
-    public HomeController(HabitService service, FriendService friends) {
+    public HomeController(HabitService service, FriendService friends, TeamService teams) {
         this.service = service;
         this.friends = friends;
+        this.teams = teams;
     }
 
     @ModelAttribute("categories")
@@ -64,6 +67,7 @@ public class HomeController {
         model.addAttribute("totalXp", totalXp);
         model.addAttribute("reflection", service.reflectionText(me, today));
         model.addAttribute("cheers", friends.cheersReceived(me, today));
+        model.addAttribute("teamStatus", teams.statusByHabit(me, today));
         return "dashboard";
     }
 

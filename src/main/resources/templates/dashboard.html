@@ -88,6 +88,14 @@
                             <svg th:replace="~{icons :: icon('flame')}"></svg>
                             <span th:text="|${row.streak}日|"></span>
                         </span>
+                        <th:block th:with="ts=${teamStatus.get(row.habit.id)}">
+                            <a class="meta-item team-status" th:if="${ts != null}" th:href="@{/friends}"
+                               th:classappend="${ts.cleared} ? 'cleared'"
+                               th:title="${ts.cleared} ? |全員達成！ボーナス +${ts.bonus} XP| : |全員達成でボーナス +${ts.bonus} XP|">
+                                <svg th:replace="~{icons :: icon('users')}"></svg>
+                                <span th:text="${ts.cleared} ? |クリア！ +${ts.bonus} XP| : |${ts.done} / ${ts.total}人|">1 / 2人</span>
+                            </a>
+                        </th:block>
                     </p>
                 </div>
                 <div class="amount-buttons" th:if="${row.habit.quantity}">
